@@ -107,7 +107,7 @@ const ChatInterface: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch('https://zeon-hybrid-api.onrender.com/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: inputMessage, userId: user?.id }),
@@ -156,7 +156,7 @@ const ChatInterface: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-800 animate-fade-in">
-      {/* Chat Header */}
+        {/* Chat Header */}
       <header className="flex items-center justify-between p-4 bg-gray-900 text-white shadow-md">
         <div className="flex items-center space-x-4">
           <button onClick={() => window.location.reload()} className="p-2 hover:bg-gray-700 rounded-full">
@@ -180,7 +180,7 @@ const ChatInterface: React.FC = () => {
         </div>
       </header>
 
-      {/* Messages Area */}
+        {/* Messages Area */}
       <main className="flex-1 overflow-y-auto p-6 space-y-6">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex items-end gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -194,23 +194,23 @@ const ChatInterface: React.FC = () => {
               <span className={`text-xs mt-1 block text-right ${msg.sender === 'user' ? 'text-blue-200' : 'text-gray-400'}`}>
                 {formatTime(msg.timestamp)}
               </span>
+              </div>
             </div>
-          </div>
-        ))}
-
-        {isLoading && (
+          ))}
+          
+          {isLoading && (
           <div className="flex items-end gap-3 justify-start">
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center font-bold text-white flex-shrink-0">AI</div>
             <div className="bg-gray-700 text-gray-200 rounded-2xl rounded-bl-none p-4">
-              <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
                 <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
                 <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
+          )}
+          <div ref={messagesEndRef} />
       </main>
 
       {/* Input Area */}
@@ -218,34 +218,34 @@ const ChatInterface: React.FC = () => {
         {messages.length <= 1 && (
           <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-2">
             {quickActions.map((action) => (
-              <button
+                <button
                 key={action}
-                onClick={() => setInputMessage(action)}
+                  onClick={() => setInputMessage(action)}
                 className="px-4 py-2 text-sm bg-gray-700 text-gray-200 rounded-full hover:bg-gray-600 transition-colors flex-shrink-0"
-              >
-                {action}
-              </button>
-            ))}
+                >
+                  {action}
+                </button>
+              ))}
           </div>
         )}
         <div className="flex items-center bg-gray-700 rounded-xl px-4 py-2">
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
+              <input
+                ref={inputRef}
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
             placeholder="Send a message..."
             className="w-full bg-transparent text-white placeholder-gray-400 focus:outline-none"
-            disabled={isLoading}
-          />
-          <button
-            onClick={sendMessage}
-            disabled={!inputMessage.trim() || isLoading}
+                disabled={isLoading}
+              />
+            <button
+              onClick={sendMessage}
+              disabled={!inputMessage.trim() || isLoading}
             className="p-2 rounded-full text-white disabled:text-gray-500 enabled:hover:bg-blue-600 enabled:bg-blue-500 transition-colors"
-          >
+            >
             <PaperAirplaneIcon className="h-6 w-6" />
-          </button>
+            </button>
         </div>
       </footer>
     </div>

@@ -223,10 +223,10 @@ async function initializeAgent(userId: string, client: Client): Promise<{ agent:
           await deployedContract.waitForDeployment();
           const contractAddress = await deployedContract.getAddress();
 
-          return {
+          return JSON.stringify({
             contractAddress: contractAddress,
             transactionHash: tx.hash,
-          };
+          });
         } catch (e: any) {
           console.error("Error deploying contract:", e);
           return `Error deploying contract: ${e.message}`;
@@ -331,7 +331,9 @@ async function initializeAgent(userId: string, client: Client): Promise<{ agent:
       };
     }
 
-    memoryStore[userId] = new MemorySaver();
+    if (!memoryStore[userId]) {
+      memoryStore[userId] = new MemorySaver();
+    }
 
     const agentConfig: AgentConfig = {
       configurable: { thread_id: userId },
@@ -339,7 +341,7 @@ async function initializeAgent(userId: string, client: Client): Promise<{ agent:
 
     const agent = createReactAgent({
       llm,
-      tools,
+      tools: tools as any,
       checkpointSaver: memoryStore[userId],
       messageModifier: `You are a helpful crypto agent for Base Sepolia testnet that can:
 
@@ -472,7 +474,7 @@ async function handleMessage(messageContent: string, senderAddress: string, clie
     const response = await processMessage(agent, config, messageContent);
     
     console.log(`🤖 Sending response to ${senderAddress}`);
-    
+
     return response;
 
   } catch (error) {
