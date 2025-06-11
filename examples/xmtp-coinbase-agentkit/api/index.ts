@@ -42,7 +42,7 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
+app.listen(port, async () => {
   console.log(`API server listening on port ${port}`);
-  initialize();
+  await initialize();
 }); 
