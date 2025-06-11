@@ -128,31 +128,31 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
       <Header isFloating={true} onLogoClick={onBack} />
 
       {/* Messages */}
-      <div className="flex-1 overflow-hidden pt-20">
-        <div className="h-full overflow-y-auto scrollbar-minimal px-8 py-6">
-          <div className="max-w-4xl mx-auto space-y-6">
+      <div className="flex-1 overflow-hidden pt-16 sm:pt-20">
+        <div className="h-full overflow-y-auto scrollbar-minimal px-4 sm:px-6 md:px-8 py-4 sm:py-6">
+          <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
             
             {/* Welcome Message */}
             {messages.length === 0 && (
-              <div className="text-center py-20">
-                <div className="avatar-modern mx-auto mb-8">
+              <div className="text-center py-12 sm:py-16 md:py-20">
+                <div className="avatar-modern mx-auto mb-6 sm:mb-8">
                   A
                 </div>
-                <h2 className="text-4xl font-bold text-white mb-6">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 sm:mb-6 px-4">
                   Welcome to Zeon Console
                 </h2>
-                <p className="text-blue-200 text-lg max-w-2xl mx-auto mb-8">
+                <p className="text-blue-200 text-base sm:text-lg max-w-2xl mx-auto mb-6 sm:mb-8 px-4">
                   Your AI-powered crypto operations terminal. Ask me anything about your wallet, 
                   execute transactions, or get market insights.
                 </p>
                 
                 {/* Quick Actions */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-3xl mx-auto">
                   {quickActions.map((action) => (
                     <button
                       key={action.label}
                       onClick={() => setInputValue(action.command)}
-                      className="p-4 glass-subtle rounded-2xl hover:bg-black/60 transition-all duration-300 group"
+                      className="p-3 sm:p-4 glass-subtle rounded-2xl hover:bg-black/60 transition-all duration-300 group"
                     >
                       <div className="text-sm font-medium text-blue-300 group-hover:text-white transition-colors">
                         {action.label}
@@ -165,7 +165,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
 
             {/* Message List */}
             {messages.map((message) => (
-              <div key={message.id} className="flex space-x-4">
+              <div key={message.id} className="flex space-x-3 sm:space-x-4">
                 
                 {/* Avatar */}
                 <div className="flex-shrink-0">
@@ -243,9 +243,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
       </div>
 
       {/* Input Area - Clean and Simple */}
-      <div className="p-6 mb-6 mx-6">
+      <div className="p-4 sm:p-6 mb-4 sm:mb-6 mx-4 sm:mx-6">
         <div className="max-w-4xl mx-auto">
-          <div className="flex space-x-3 items-center">
+          <div className="flex space-x-2 sm:space-x-3 items-end">
             <div className="flex-1 relative">
               <textarea
                 ref={inputRef}
@@ -253,10 +253,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ask me anything about crypto operations..."
-                className="w-full px-6 py-4 glass-modern rounded-2xl text-white placeholder-blue-300/50 focus:outline-none border-blue-500/30 focus:border-blue-400 resize-none transition-all duration-300"
+                className="w-full px-4 sm:px-6 py-3 sm:py-4 glass-modern rounded-2xl text-white placeholder-blue-300/50 focus:outline-none border-blue-500/30 focus:border-blue-400 resize-none transition-all duration-300 text-sm sm:text-base"
                 rows={1}
                 style={{ 
-                  minHeight: '56px', 
+                  minHeight: '48px', 
                   maxHeight: '120px',
                   background: 'rgba(0, 0, 0, 0.60)',
                   backdropFilter: 'blur(20px) saturate(150%)',
@@ -274,7 +274,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
                     console.error('Failed to read clipboard:', err);
                   }
                 }}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 hover:bg-blue-500/20 rounded-lg transition-colors duration-200"
+                className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 p-1.5 sm:p-2 hover:bg-blue-500/20 rounded-lg transition-colors duration-200"
               >
                 <ClipboardIcon className="h-4 w-4 text-blue-300 hover:text-white" />
               </button>
@@ -284,10 +284,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
             <button
               onClick={sendMessage}
               disabled={!inputValue.trim() || isTyping}
-              className="px-6 py-4 blue-gradient text-white font-medium rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              style={{ height: '56px', minWidth: '56px' }}
+              className="px-4 sm:px-6 py-3 sm:py-4 blue-gradient text-white font-medium rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              style={{ height: '48px', minWidth: '48px' }}
             >
-              <PaperAirplaneIcon className="h-5 w-5" />
+              <PaperAirplaneIcon className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           </div>
         </div>

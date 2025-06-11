@@ -35,39 +35,39 @@ const Footer: React.FC = () => {
       </div>
 
       <div className="relative glass-modern">
-        <div className="max-w-7xl mx-auto px-6 py-16">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+          <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-start lg:items-center">
             
             {/* Left Section - Brand & Social */}
-            <div className="space-y-8">
+            <div className="space-y-6 sm:space-y-8">
               <div>
-                <div className="flex items-center space-x-4 mb-6">
-                  <div className="text-3xl font-bold text-white">Zeon</div>
-                  <div className="flex items-center space-x-2 px-3 py-1 glass-subtle rounded-full">
+                <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-4 sm:mb-6">
+                  <div className="text-2xl sm:text-3xl font-bold text-white">Zeon</div>
+                  <div className="flex items-center space-x-2 px-3 py-1 glass-subtle rounded-full w-fit">
                     <img 
                       src="/base logo.svg" 
                       alt="Base Logo" 
-                      className="w-4 h-4"
+                      className="w-3 h-3 sm:w-4 sm:h-4"
                     />
                     <span className="text-xs font-semibold text-blue-300">Protocol</span>
                   </div>
                 </div>
-                <p className="text-blue-200 text-lg leading-relaxed max-w-md">
+                <p className="text-blue-200 text-base sm:text-lg leading-relaxed max-w-md">
                   Advanced XMTP agent infrastructure for sophisticated crypto operations. 
                   Building the future of decentralized communication.
                 </p>
               </div>
               
               {/* Social Links */}
-              <div className="flex items-center space-x-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
                 <a
-                  href="https://x.com/zeonprotocol"
+                  href="https://x.com/_zeonai?t=5ZnjPmO3DdR-MbzX9zERmQ&s=09"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-center space-x-3 px-4 py-3 glass-subtle rounded-xl hover:bg-black/60 transition-all duration-300"
+                  className="group flex items-center space-x-3 px-4 py-3 glass-subtle rounded-xl hover:bg-black/60 transition-all duration-300 w-full sm:w-auto"
                 >
                   <svg 
-                    className="w-5 h-5 text-blue-300 group-hover:text-white transition-colors" 
+                    className="w-4 h-4 sm:w-5 sm:h-5 text-blue-300 group-hover:text-white transition-colors flex-shrink-0" 
                     fill="currentColor" 
                     viewBox="0 0 24 24"
                   >
@@ -76,25 +76,25 @@ const Footer: React.FC = () => {
                   <span className="text-sm font-medium text-blue-300 group-hover:text-white transition-colors">
                     Follow us on X
                   </span>
-                  <ArrowTopRightOnSquareIcon className="w-4 h-4 text-blue-400 group-hover:text-white transition-colors" />
+                  <ArrowTopRightOnSquareIcon className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400 group-hover:text-white transition-colors flex-shrink-0" />
                 </a>
               </div>
             </div>
 
             {/* Right Section - Newsletter & Waitlist */}
-            <div className="space-y-8">
+            <div className="space-y-6 sm:space-y-8">
               <div>
-                <h3 className="text-2xl font-bold text-white mb-4">
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">
                   Join the Waitlist
                 </h3>
-                <p className="text-blue-200 mb-6">
+                <p className="text-blue-200 mb-4 sm:mb-6 text-sm sm:text-base">
                   Be the first to access Zeon Protocol. Get early access, updates, and exclusive insights.
                 </p>
               </div>
 
               {/* Email Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="flex space-x-3">
+                <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
                   <div className="flex-1">
                     <input
                       type="email"
@@ -103,21 +103,21 @@ const Footer: React.FC = () => {
                       placeholder="Enter your email address"
                       required
                       disabled={isSubmitting}
-                      className="input-modern w-full disabled:opacity-50"
+                      className="input-modern w-full disabled:opacity-50 text-sm sm:text-base"
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={!email.trim() || isSubmitting}
-                    className="btn-blue disabled:opacity-50 disabled:cursor-not-allowed px-6 py-3 whitespace-nowrap"
+                    className="btn-blue disabled:opacity-50 disabled:cursor-not-allowed px-4 sm:px-6 py-3 whitespace-nowrap w-full sm:w-auto text-sm sm:text-base"
                   >
                     {isSubmitting ? (
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center justify-center space-x-2">
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                         <span>Joining...</span>
                       </div>
                     ) : (
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center justify-center space-x-2">
                         <span>Join Waitlist</span>
                         <PaperAirplaneIcon className="w-4 h-4" />
                       </div>
@@ -128,7 +128,7 @@ const Footer: React.FC = () => {
                 {/* Success Message */}
                 {isSubscribed && (
                   <div className="animate-slide-up">
-                    <div className="p-4 bg-blue-500/20 border border-blue-400/30 rounded-xl">
+                    <div className="p-3 sm:p-4 bg-blue-500/20 border border-blue-400/30 rounded-xl">
                       <p className="text-blue-100 text-sm font-medium">
                         ✨ Welcome to the waitlist! Check your email for confirmation.
                       </p>
@@ -140,19 +140,20 @@ const Footer: React.FC = () => {
               {/* Privacy Notice */}
               <p className="text-xs text-blue-300/70">
                 We respect your privacy. Unsubscribe at any time. 
-                <br />
+                <br className="hidden sm:block" />
+                <span className="sm:hidden"> </span>
                 By joining, you agree to receive updates about Zeon Protocol.
               </p>
             </div>
           </div>
 
           {/* Bottom Section */}
-          <div className="mt-16 pt-8 border-t border-white/10">
+          <div className="mt-12 sm:mt-16 pt-6 sm:pt-8 border-t border-white/10">
             <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-              <div className="text-sm text-blue-300/70">
+              <div className="text-xs sm:text-sm text-blue-300/70 text-center md:text-left">
                 © 2024 Zeon Protocol. All rights reserved.
               </div>
-              <div className="flex items-center space-x-8 text-sm">
+              <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-6 md:space-x-8 text-xs sm:text-sm">
                 <a 
                   href="#" 
                   className="text-blue-300 hover:text-white transition-colors duration-200"

@@ -43,43 +43,43 @@ const Header: React.FC<HeaderProps> = ({ isFloating = true, onLogoClick }) => {
   };
 
   const headerClass = isFloating 
-    ? "fixed top-6 left-6 right-6 z-50 glass-modern rounded-[28px] px-8 py-3"
-    : "glass-modern px-8 py-3";
+    ? "fixed top-3 sm:top-6 left-3 sm:left-6 right-3 sm:right-6 z-50 glass-modern rounded-[20px] sm:rounded-[28px] px-4 sm:px-8 py-3"
+    : "glass-modern px-4 sm:px-8 py-3";
 
   return (
     <header className={headerClass}>
       <div className="flex items-center justify-between">
         
         {/* Left - Logo */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 sm:space-x-4">
           <button 
             onClick={onLogoClick}
-            className="text-2xl font-bold text-white hover:text-blue-100 transition-colors duration-200 cursor-pointer"
+            className="text-xl sm:text-2xl font-bold text-white hover:text-blue-100 transition-colors duration-200 cursor-pointer"
           >
             Zeon
           </button>
-          <div className="flex items-center space-x-2 px-3 py-1 glass-subtle rounded-full">
+          <div className="flex items-center space-x-2 px-2 sm:px-3 py-1 glass-subtle rounded-full">
             <img 
               src="/base logo.svg" 
               alt="Base Logo" 
-              className="w-4 h-4"
+              className="w-3 h-3 sm:w-4 sm:h-4"
             />
-            <span className="text-xs font-semibold text-blue-300">Base</span>
+            <span className="text-xs font-semibold text-blue-300 hidden sm:inline">Base</span>
           </div>
         </div>
 
         {/* Right - Wallet/Auth */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 sm:space-x-4">
           {authenticated && wallet ? (
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center space-x-3 px-6 py-3 glass-subtle rounded-[20px] hover:bg-black/60 transition-all duration-300 group"
+                className="flex items-center space-x-2 sm:space-x-3 px-3 sm:px-6 py-2 sm:py-3 glass-subtle rounded-[16px] sm:rounded-[20px] hover:bg-black/60 transition-all duration-300 group"
               >
                 <div className="avatar-small-modern">
                   W
                 </div>
-                <div className="text-left">
+                <div className="text-left hidden sm:block">
                   <div className="text-sm font-semibold text-white group-hover:text-blue-100 transition-colors">
                     {formatAddress(wallet.address)}
                   </div>
@@ -96,7 +96,7 @@ const Header: React.FC<HeaderProps> = ({ isFloating = true, onLogoClick }) => {
 
               {/* Dropdown */}
               {isDropdownOpen && (
-                <div className="absolute right-0 top-full mt-3 w-80 glass-modern rounded-[24px] p-6 shadow-2xl border border-blue-500/20 animate-slide-down">
+                <div className="absolute right-0 top-full mt-3 w-72 sm:w-80 glass-modern rounded-[20px] sm:rounded-[24px] p-4 sm:p-6 shadow-2xl border border-blue-500/20 animate-slide-down">
                   <div className="space-y-6">
                     
                     {/* Wallet Address */}
