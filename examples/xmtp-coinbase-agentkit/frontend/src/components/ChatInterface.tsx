@@ -57,41 +57,39 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
 
     const userMessage = inputValue.trim();
     setInputValue('');
-    
-    // Add user message
+
     addMessage(userMessage, user.wallet.address);
-    
     setIsTyping(true);
-    
+
     try {
-      // Simulate sending to agent
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Simulate agent response
-      const agentResponse = generateAgentResponse(userMessage);
-      addMessage(agentResponse, 'agent');
-      
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          history: messages.map(m => ({
+            role: isUserMessage(m.senderAddress) ? 'user' : 'assistant',
+            content: m.content
+          })),
+          walletAddress: user.wallet.address,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get response from agent');
+      }
+
+      const data = await response.json();
+      addMessage(data.response, 'agent');
+
     } catch (error) {
       console.error('Failed to send message:', error);
-      addMessage('Failed to send message. Please try again.', 'system', true);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+      addMessage(`Failed to send message: ${errorMessage}`, 'system', true);
     } finally {
       setIsTyping(false);
-    }
-  };
-
-  const generateAgentResponse = (userMessage: string): string => {
-    const message = userMessage.toLowerCase();
-    
-    if (message.includes('balance')) {
-      return 'Your wallet balance: 0.1234 ETH ($234.56 USD). Available tokens: 1,000 USDC, 50 DAI.';
-    } else if (message.includes('transfer') || message.includes('send')) {
-      return 'Transfer initiated. Transaction hash: 0x1234...abcd. Estimated confirmation time: 2-3 minutes.';
-    } else if (message.includes('swap')) {
-      return 'Swap executed successfully. 100 USDC → 0.0543 ETH. Gas fee: $2.34. Transaction pending confirmation.';
-    } else if (message.includes('price')) {
-      return 'Current prices: ETH $1,834.56 (+2.3%), BTC $42,123.45 (-0.8%), SOL $98.34 (+5.2%).';
-    } else {
-      return `I understand you want to: "${userMessage}". I can help with transfers, swaps, balance checks, and other crypto operations. What would you like to do?`;
     }
   };
 
