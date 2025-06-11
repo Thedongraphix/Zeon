@@ -47,23 +47,39 @@ export const createSigner = (key: string): Signer => {
 
 /**
  * Generate a random encryption key
- * @returns The encryption key
+ * @returns The encryption key as a hex string with 0x prefix
  */
 export const generateEncryptionKeyHex = () => {
-  /* Generate a random encryption key */
+  /* Generate a random 32-byte encryption key */
   const uint8Array = getRandomValues(new Uint8Array(32));
   /* Convert the encryption key to a hex string */
-  return toString(uint8Array, "hex");
+  const hex = toString(uint8Array, "hex");
+  return `0x${hex}`;
 };
 
 /**
  * Get the encryption key from a hex string
  * @param hex - The hex string
  * @returns The encryption key
+ * @throws Error if the key is not exactly 32 bytes (64 hex characters without 0x prefix)
  */
 export const getEncryptionKeyFromHex = (hex: string) => {
+  /* Clean and convert the hex string to lowercase */
+  const cleanHex = hex.trim().toLowerCase();
+  const sanitizedHex = cleanHex.startsWith("0x") ? cleanHex.slice(2) : cleanHex;
+
+  /* Validate hex string length (32 bytes = 64 hex characters) */
+  if (sanitizedHex.length !== 64) {
+    throw new Error(`Encryption key must be exactly 32 bytes (64 hex characters). Got ${sanitizedHex.length} characters.`);
+  }
+
+  /* Validate that it's a valid hex string */
+  if (!/^[0-9a-f]{64}$/.test(sanitizedHex)) {
+    throw new Error("Invalid hexadecimal characters in encryption key");
+  }
+
   /* Convert the hex string to an encryption key */
-  return fromString(hex, "hex");
+  return fromString(sanitizedHex, "hex");
 };
 
 export const getDbPath = (description: string = "xmtp") => {

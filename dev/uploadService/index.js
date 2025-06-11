@@ -4,7 +4,6 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const app = express();
 const port = 3000;
-
 const key = fs.readFileSync("key.pem", "utf-8");
 const cert = fs.readFileSync("cert.pem", "utf-8");
 
