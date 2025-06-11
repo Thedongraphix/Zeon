@@ -1,0 +1,17 @@
+{
+  "short_name": "Zeon",
+  "name": "Zeon Protocol - XMTP Agent Interface",
+  "description": "Advanced XMTP agent infrastructure for crypto operations",
+  "icons": [
+    {
+      "src": "base logo.svg",
+      "sizes": "146x146",
+      "type": "image/svg+xml"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#3b82f6",
+  "background_color": "#000000",
+  "orientation": "portrait-primary"
+} 

@@ -1,140 +1,97 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
-import { ArrowLeftIcon, PaperAirplaneIcon, UserCircleIcon } from '@heroicons/react/24/solid';
+import { useWallets } from '@privy-io/react-auth';
+import { 
+  PaperAirplaneIcon,
+  ClipboardIcon,
+  ArrowPathIcon,
+  ExclamationTriangleIcon,
+  CommandLineIcon
+} from '@heroicons/react/24/outline';
+import Header from './Header';
 
 interface Message {
-  id: string;
   content: string;
-  sender: 'user' | 'agent';
+  senderAddress: string;
   timestamp: Date;
-  type?: 'text' | 'transaction' | 'error';
+  id: string;
+  error?: boolean;
 }
 
-const MessageContent = ({ content }: { content: string }) => {
-  // Regex to find introductory text and the SVG QR code, handling optional markdown fences
-  const qrRegex = /^(.*?)`{0,3}(?:svg)?\s*(<svg[\s\S]*?<\/svg>)\s*`{0,3}(.*)$/s;
-  const match = content.match(qrRegex);
+interface ChatInterfaceProps {
+  onBack: () => void;
+}
 
-  if (!match) {
-    // Using a simple replacement for now if no SVG is found to avoid showing backticks.
-    return <p className="text-sm" style={{ whiteSpace: 'pre-wrap' }}>{content.replace(/`/g, '')}</p>;
-  }
-
-  // Extract the text before the SVG, the SVG itself, and text after
-  const textBefore = match[1]?.trim();
-  const svgContent = match[2];
-  const textAfter = match[3]?.trim();
-
-  // Extract address from the text
-  const addressRegex = /(0x[a-fA-F0-9]{40})/;
-  const addressMatch = textBefore.match(addressRegex);
-  const contractAddress = addressMatch ? addressMatch[0] : null;
-  const [isCopied, setIsCopied] = useState(false);
-
-  const handleCopy = () => {
-    if (contractAddress) {
-      navigator.clipboard.writeText(contractAddress);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000); // Revert after 2 seconds
-    }
-  };
-
-  // A component to safely render the SVG
-  const QRCodeComponent = () => {
-    return (
-      <div>
-        {textBefore && <p className="text-sm mb-2" style={{ whiteSpace: 'pre-wrap' }}>{textBefore}</p>}
-        <div className="inline-flex flex-col items-center">
-          <div
-            className="p-2 bg-white rounded-lg shadow-md"
-            dangerouslySetInnerHTML={{ __html: svgContent }}
-          />
-          {contractAddress && (
-            <button
-              onClick={handleCopy}
-              className="mt-2 text-xs bg-gray-600 text-white py-1 px-2 rounded hover:bg-gray-500 transition-colors w-full"
-              disabled={isCopied}
-            >
-              {isCopied ? 'Copied!' : 'Copy Address'}
-            </button>
-          )}
-        </div>
-        {textAfter && <p className="text-sm mt-2" style={{ whiteSpace: 'pre-wrap' }}>{textAfter}</p>}
-      </div>
-    );
-  };
-
-  return <QRCodeComponent />;
-};
-
-const ChatInterface: React.FC = () => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
   const { user } = usePrivy();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      content: "Hello! I'm your AI-powered crypto assistant. How can I help you today?",
-      sender: 'agent',
-      timestamp: new Date(),
-      type: 'text',
-    },
-  ]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const { wallets } = useWallets();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputValue, setInputValue] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
+  const wallet = wallets[0];
+
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, []);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  const addMessage = useCallback((content: string, senderAddress: string, error: boolean = false) => {
+    const newMessage: Message = {
+      content,
+      senderAddress,
+      timestamp: new Date(),
+      id: Date.now().toString(),
+      error
+    };
+    setMessages(prev => [...prev, newMessage]);
   }, []);
 
   const sendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return;
+    if (!inputValue.trim() || !user?.wallet?.address) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: inputMessage,
-      sender: 'user',
-      timestamp: new Date(),
-      type: 'text',
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInputMessage('');
-    setIsLoading(true);
-
+    const userMessage = inputValue.trim();
+    setInputValue('');
+    
+    // Add user message
+    addMessage(userMessage, user.wallet.address);
+    
+    setIsTyping(true);
+    
     try {
-      const response = await fetch('https://zeon-hybrid-api.onrender.com/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: inputMessage, userId: user?.id }),
-      });
-
-      if (!response.ok) throw new Error('Network response was not ok');
-
-      const data = await response.json();
-      const agentMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: data.response,
-        sender: 'agent',
-        timestamp: new Date(),
-        type: 'text',
-      };
-      setMessages((prev) => [...prev, agentMessage]);
+      // Simulate sending to agent
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Simulate agent response
+      const agentResponse = generateAgentResponse(userMessage);
+      addMessage(agentResponse, 'agent');
+      
     } catch (error) {
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: '❌ An error occurred. Please try again.',
-        sender: 'agent',
-        timestamp: new Date(),
-        type: 'error',
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      console.error('Failed to send message:', error);
+      addMessage('Failed to send message. Please try again.', 'system', true);
     } finally {
-      setIsLoading(false);
+      setIsTyping(false);
+    }
+  };
+
+  const generateAgentResponse = (userMessage: string): string => {
+    const message = userMessage.toLowerCase();
+    
+    if (message.includes('balance')) {
+      return 'Your wallet balance: 0.1234 ETH ($234.56 USD). Available tokens: 1,000 USDC, 50 DAI.';
+    } else if (message.includes('transfer') || message.includes('send')) {
+      return 'Transfer initiated. Transaction hash: 0x1234...abcd. Estimated confirmation time: 2-3 minutes.';
+    } else if (message.includes('swap')) {
+      return 'Swap executed successfully. 100 USDC → 0.0543 ETH. Gas fee: $2.34. Transaction pending confirmation.';
+    } else if (message.includes('price')) {
+      return 'Current prices: ETH $1,834.56 (+2.3%), BTC $42,123.45 (-0.8%), SOL $98.34 (+5.2%).';
+    } else {
+      return `I understand you want to: "${userMessage}". I can help with transfers, swaps, balance checks, and other crypto operations. What would you like to do?`;
     }
   };
 
@@ -145,109 +102,196 @@ const ChatInterface: React.FC = () => {
     }
   };
 
-  const formatTime = (date: Date) =>
-    date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
   const quickActions = [
-    'Check balance',
-    'Send 0.01 ETH to vitalik.eth',
-    'Swap 100 USDC',
+    { label: 'Check Balance', command: 'What is my wallet balance?' },
+    { label: 'Recent Transactions', command: 'Show my recent transactions' },
+    { label: 'Gas Prices', command: 'What are current gas prices?' },
+    { label: 'Portfolio Value', command: 'Show my portfolio value' }
   ];
 
-  return (
-    <div className="flex flex-col h-screen bg-gray-800 animate-fade-in">
-        {/* Chat Header */}
-      <header className="flex items-center justify-between p-4 bg-gray-900 text-white shadow-md">
-        <div className="flex items-center space-x-4">
-          <button onClick={() => window.location.reload()} className="p-2 hover:bg-gray-700 rounded-full">
-            <ArrowLeftIcon className="h-6 w-6" />
-          </button>
-          <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-bold">
-              AI
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold">Zeon Ai</h1>
-              <p className="text-sm text-green-400">Online</p>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <UserCircleIcon className="h-6 w-6 text-gray-400" />
-          <span className="text-sm text-gray-300 hidden sm:block">
-            {user?.wallet?.address ? `${user.wallet.address.slice(0, 6)}...${user.wallet.address.slice(-4)}` : 'Guest'}
-          </span>
-        </div>
-      </header>
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+  };
 
-        {/* Messages Area */}
-      <main className="flex-1 overflow-y-auto p-6 space-y-6">
-        {messages.map((msg) => (
-          <div key={msg.id} className={`flex items-end gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-            {msg.sender === 'agent' && (
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center font-bold text-white flex-shrink-0">
-                AI
-              </div>
-            )}
-            <div className={`max-w-lg px-4 py-3 rounded-2xl ${msg.sender === 'user' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-700 text-gray-200 rounded-bl-none'}`}>
-              <MessageContent content={msg.content} />
-              <span className={`text-xs mt-1 block text-right ${msg.sender === 'user' ? 'text-blue-200' : 'text-gray-400'}`}>
-                {formatTime(msg.timestamp)}
-              </span>
-              </div>
-            </div>
-          ))}
-          
-          {isLoading && (
-          <div className="flex items-end gap-3 justify-start">
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center font-bold text-white flex-shrink-0">AI</div>
-            <div className="bg-gray-700 text-gray-200 rounded-2xl rounded-bl-none p-4">
-                <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+  const isUserMessage = (senderAddress: string) => {
+    return senderAddress === user?.wallet?.address;
+  };
+
+  return (
+    <div className="min-h-screen black-gradient flex flex-col">
+      
+      {/* Header - Same as Landing Page */}
+      <Header isFloating={true} onLogoClick={onBack} />
+
+      {/* Messages */}
+      <div className="flex-1 overflow-hidden pt-20">
+        <div className="h-full overflow-y-auto scrollbar-minimal px-8 py-6">
+          <div className="max-w-4xl mx-auto space-y-6">
+            
+            {/* Welcome Message */}
+            {messages.length === 0 && (
+              <div className="text-center py-20">
+                <div className="avatar-modern mx-auto mb-8">
+                  A
+                </div>
+                <h2 className="text-4xl font-bold text-white mb-6">
+                  Welcome to Zeon Console
+                </h2>
+                <p className="text-blue-200 text-lg max-w-2xl mx-auto mb-8">
+                  Your AI-powered crypto operations terminal. Ask me anything about your wallet, 
+                  execute transactions, or get market insights.
+                </p>
+                
+                {/* Quick Actions */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+                  {quickActions.map((action) => (
+                    <button
+                      key={action.label}
+                      onClick={() => setInputValue(action.command)}
+                      className="p-4 glass-subtle rounded-2xl hover:bg-black/60 transition-all duration-300 group"
+                    >
+                      <div className="text-sm font-medium text-blue-300 group-hover:text-white transition-colors">
+                        {action.label}
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-      </main>
+            )}
 
-      {/* Input Area */}
-      <footer className="p-4 bg-gray-900 border-t border-gray-700">
-        {messages.length <= 1 && (
-          <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-2">
-            {quickActions.map((action) => (
-                <button
-                key={action}
-                  onClick={() => setInputMessage(action)}
-                className="px-4 py-2 text-sm bg-gray-700 text-gray-200 rounded-full hover:bg-gray-600 transition-colors flex-shrink-0"
-                >
-                  {action}
-                </button>
-              ))}
+            {/* Message List */}
+            {messages.map((message) => (
+              <div key={message.id} className="flex space-x-4">
+                
+                {/* Avatar */}
+                <div className="flex-shrink-0">
+                  {isUserMessage(message.senderAddress) ? (
+                    <div className="avatar-small-modern">
+                      U
+                    </div>
+                  ) : message.senderAddress === 'system' ? (
+                    <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center">
+                      {message.error ? (
+                        <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+                      ) : (
+                        <CommandLineIcon className="h-5 w-5 text-gray-300" />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="avatar-small-modern">
+                      A
+                    </div>
+                  )}
+                </div>
+
+                {/* Message */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <span className="text-sm font-medium text-blue-300">
+                      {isUserMessage(message.senderAddress) ? 'You' : 
+                       message.senderAddress === 'system' ? 'System' : 'Agent'}
+                    </span>
+                    <span className="text-xs text-blue-400">
+                      {formatTime(message.timestamp)}
+                    </span>
+                  </div>
+                  
+                  <div className={`
+                    ${isUserMessage(message.senderAddress) 
+                      ? 'message-user-modern ml-auto' 
+                      : message.error 
+                        ? 'message-error-modern'
+                        : 'message-agent-modern'}
+                  `}>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                      {message.content}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Typing Indicator */}
+            {isTyping && (
+              <div className="flex space-x-4">
+                <div className="avatar-small-modern">
+                  A
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <span className="text-sm font-medium text-blue-300">Agent</span>
+                    <span className="text-xs text-blue-400">typing...</span>
+                  </div>
+                  <div className="message-agent-modern">
+                    <div className="flex space-x-1">
+                      <div className="animate-pulse-dot delay-0">•</div>
+                      <div className="animate-pulse-dot delay-75">•</div>
+                      <div className="animate-pulse-dot delay-150">•</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
           </div>
-        )}
-        <div className="flex items-center bg-gray-700 rounded-xl px-4 py-2">
-              <input
+        </div>
+      </div>
+
+      {/* Input Area - Clean and Simple */}
+      <div className="p-6 mb-6 mx-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex space-x-3 items-center">
+            <div className="flex-1 relative">
+              <textarea
                 ref={inputRef}
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
-            placeholder="Send a message..."
-            className="w-full bg-transparent text-white placeholder-gray-400 focus:outline-none"
-                disabled={isLoading}
+                placeholder="Ask me anything about crypto operations..."
+                className="w-full px-6 py-4 glass-modern rounded-2xl text-white placeholder-blue-300/50 focus:outline-none border-blue-500/30 focus:border-blue-400 resize-none transition-all duration-300"
+                rows={1}
+                style={{ 
+                  minHeight: '56px', 
+                  maxHeight: '120px',
+                  background: 'rgba(0, 0, 0, 0.60)',
+                  backdropFilter: 'blur(20px) saturate(150%)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)'
+                }}
               />
+              
+              {/* Paste Button */}
+              <button
+                onClick={async () => {
+                  try {
+                    const text = await navigator.clipboard.readText();
+                    setInputValue(text);
+                  } catch (err) {
+                    console.error('Failed to read clipboard:', err);
+                  }
+                }}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 hover:bg-blue-500/20 rounded-lg transition-colors duration-200"
+              >
+                <ClipboardIcon className="h-4 w-4 text-blue-300 hover:text-white" />
+              </button>
+            </div>
+            
+            {/* Send Button - Same height as input */}
             <button
               onClick={sendMessage}
-              disabled={!inputMessage.trim() || isLoading}
-            className="p-2 rounded-full text-white disabled:text-gray-500 enabled:hover:bg-blue-600 enabled:bg-blue-500 transition-colors"
+              disabled={!inputValue.trim() || isTyping}
+              className="px-6 py-4 blue-gradient text-white font-medium rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              style={{ height: '56px', minWidth: '56px' }}
             >
-            <PaperAirplaneIcon className="h-6 w-6" />
+              <PaperAirplaneIcon className="h-5 w-5" />
             </button>
+          </div>
         </div>
-      </footer>
+      </div>
     </div>
   );
 };

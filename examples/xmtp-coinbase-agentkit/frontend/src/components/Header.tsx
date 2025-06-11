@@ -1,14 +1,40 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
+import { useWallets } from '@privy-io/react-auth';
+import { ChevronDownIcon, DocumentDuplicateIcon, CheckIcon } from '@heroicons/react/24/outline';
 
-const Header: React.FC = () => {
-  const { login, logout, authenticated, user } = usePrivy();
+interface HeaderProps {
+  isFloating?: boolean;
+  onLogoClick?: () => void;
+}
 
-  const handleAuthAction = () => {
-    if (authenticated) {
-      logout();
-    } else {
-      login();
+const Header: React.FC<HeaderProps> = ({ isFloating = true, onLogoClick }) => {
+  const { authenticated, logout } = usePrivy();
+  const { wallets } = useWallets();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const wallet = wallets[0];
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const copyToClipboard = async (text: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
     }
   };
 
@@ -16,45 +42,140 @@ const Header: React.FC = () => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
-  return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-dark-950/50 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
-          {/* Logo */}
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <svg
-                className="w-5 h-5 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-                />
-              </svg>
-            </div>
-            <h1 className="text-xl font-bold text-white">Zeon Ai</h1>
-          </div>
+  const headerClass = isFloating 
+    ? "fixed top-6 left-6 right-6 z-50 glass-modern rounded-[28px] px-8 py-3"
+    : "glass-modern px-8 py-3";
 
-          {/* Wallet Connection */}
-          <button
-            onClick={handleAuthAction}
-            className="bg-gray-800 text-white font-semibold px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-300 flex items-center space-x-2"
+  return (
+    <header className={headerClass}>
+      <div className="flex items-center justify-between">
+        
+        {/* Left - Logo */}
+        <div className="flex items-center space-x-4">
+          <button 
+            onClick={onLogoClick}
+            className="text-2xl font-bold text-white hover:text-blue-100 transition-colors duration-200 cursor-pointer"
           >
-            {authenticated && user?.wallet?.address ? (
-              <>
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>{formatAddress(user.wallet.address)}</span>
-              </>
-            ) : (
-              <span>Connect Wallet</span>
-            )}
+            Zeon
           </button>
+          <div className="flex items-center space-x-2 px-3 py-1 glass-subtle rounded-full">
+            <img 
+              src="/base logo.svg" 
+              alt="Base Logo" 
+              className="w-4 h-4"
+            />
+            <span className="text-xs font-semibold text-blue-300">Base</span>
+          </div>
+        </div>
+
+        {/* Right - Wallet/Auth */}
+        <div className="flex items-center space-x-4">
+          {authenticated && wallet ? (
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center space-x-3 px-6 py-3 glass-subtle rounded-[20px] hover:bg-black/60 transition-all duration-300 group"
+              >
+                <div className="avatar-small-modern">
+                  W
+                </div>
+                <div className="text-left">
+                  <div className="text-sm font-semibold text-white group-hover:text-blue-100 transition-colors">
+                    {formatAddress(wallet.address)}
+                  </div>
+                  <div className="text-xs text-blue-300 group-hover:text-blue-200 transition-colors">
+                    Connected
+                  </div>
+                </div>
+                <ChevronDownIcon 
+                  className={`h-4 w-4 text-blue-300 group-hover:text-white transition-all duration-300 ${
+                    isDropdownOpen ? 'rotate-180' : ''
+                  }`} 
+                />
+              </button>
+
+              {/* Dropdown */}
+              {isDropdownOpen && (
+                <div className="absolute right-0 top-full mt-3 w-80 glass-modern rounded-[24px] p-6 shadow-2xl border border-blue-500/20 animate-slide-down">
+                  <div className="space-y-6">
+                    
+                    {/* Wallet Address */}
+                    <div>
+                      <label className="text-xs font-semibold text-blue-300 uppercase tracking-wider mb-2 block">
+                        Wallet Address
+                      </label>
+                      <div className="flex items-center justify-between p-3 glass-subtle rounded-xl">
+                        <span className="font-mono text-sm text-white">
+                          {formatAddress(wallet.address)}
+                        </span>
+                        <button
+                          onClick={() => copyToClipboard(wallet.address, 'address')}
+                          className="p-2 hover:bg-blue-500/20 rounded-lg transition-colors duration-200"
+                        >
+                          {copiedField === 'address' ? (
+                            <CheckIcon className="h-4 w-4 text-blue-400" />
+                          ) : (
+                            <DocumentDuplicateIcon className="h-4 w-4 text-blue-300 hover:text-white" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Connection Type */}
+                    <div>
+                      <label className="text-xs font-semibold text-blue-300 uppercase tracking-wider mb-2 block">
+                        Connection
+                      </label>
+                      <div className="p-3 glass-subtle rounded-xl">
+                        <div className="flex items-center space-x-3">
+                          <div className="status-modern"></div>
+                          <span className="text-sm font-medium text-white">
+                            {wallet.walletClientType}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Network */}
+                    <div>
+                      <label className="text-xs font-semibold text-blue-300 uppercase tracking-wider mb-2 block">
+                        Network
+                      </label>
+                      <div className="p-3 glass-subtle rounded-xl">
+                        <div className="flex items-center space-x-3">
+                          <img 
+                            src="/base logo.svg" 
+                            alt="Base Logo" 
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm font-medium text-white">
+                            Base Sepolia
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="pt-2 border-t border-white/10">
+                      <button
+                        onClick={() => {
+                          logout();
+                          setIsDropdownOpen(false);
+                        }}
+                        className="w-full py-3 px-4 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all duration-200 font-medium text-sm"
+                      >
+                        Disconnect Wallet
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-sm text-blue-300 font-medium">
+              Not Connected
+            </div>
+          )}
         </div>
       </div>
     </header>

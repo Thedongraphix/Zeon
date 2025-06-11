@@ -29,14 +29,27 @@ function AppContent() {
     // The login flow is handled by the LandingPage component
   };
 
+  const handleBackToLanding = () => {
+    setShowChat(false);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen black-gradient text-white overflow-hidden">
+      {/* Header - only show on landing page */}
       {!showChat && <Header />}
-      {showChat && authenticated ? (
-        <ChatInterface />
-      ) : (
-        <LandingPage onGetStarted={handleGetStarted} />
-      )}
+      
+      {/* Main Content with smooth transitions */}
+      <div className="relative">
+        {showChat && authenticated ? (
+          <div className="animate-scale-up">
+            <ChatInterface onBack={handleBackToLanding} />
+          </div>
+        ) : (
+          <div className="animate-scale-up">
+            <LandingPage onGetStarted={handleGetStarted} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
