@@ -8,22 +8,37 @@ const Footer: React.FC = () => {
   const [email, setEmail] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
 
     setIsSubmitting(true);
+    setError(null);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setIsSubscribed(true);
-    setEmail('');
-    setIsSubmitting(false);
-    
-    // Reset success message after 3 seconds
-    setTimeout(() => setIsSubscribed(false), 3000);
+    try {
+      const response = await fetch('https://zeon-hybrid-api.onrender.com/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (response.ok) {
+        setIsSubscribed(true);
+        setEmail('');
+        setTimeout(() => setIsSubscribed(false), 5000);
+      } else {
+        const data = await response.json();
+        setError(data.message || 'An error occurred. Please try again.');
+      }
+    } catch (err) {
+      setError('Failed to connect to the server. Please check your connection.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -131,6 +146,17 @@ const Footer: React.FC = () => {
                     <div className="p-3 sm:p-4 bg-blue-500/20 border border-blue-400/30 rounded-xl">
                       <p className="text-blue-100 text-sm font-medium">
                         ✨ Welcome to the waitlist! Check your email for confirmation.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Error Message */}
+                {error && (
+                  <div className="animate-slide-up">
+                    <div className="p-3 sm:p-4 bg-red-500/20 border border-red-400/30 rounded-xl">
+                      <p className="text-red-100 text-sm font-medium">
+                        {error}
                       </p>
                     </div>
                   </div>

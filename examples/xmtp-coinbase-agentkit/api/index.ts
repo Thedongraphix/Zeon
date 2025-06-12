@@ -9,7 +9,11 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(bodyParser.json());
 
-let agentHandler: (message: string, userId: string) => Promise<string>;
+let agentHandler: (
+  message: string,
+  userId: string,
+  history: { role: "user" | "assistant"; content: string }[],
+) => Promise<string>;
 
 async function initialize() {
   console.log('Initializing agent for API...');
@@ -24,9 +28,11 @@ async function initialize() {
 }
 
 app.post('/api/chat', async (req, res) => {
-  const { message, userId } = req.body;
-  if (!message || !userId) {
-    return res.status(400).json({ error: 'Message and userId are required' });
+  const { message, history, walletAddress } = req.body;
+  if (!message || !walletAddress) {
+    return res
+      .status(400)
+      .json({ error: 'Message and walletAddress are required' });
   }
 
   if (!agentHandler) {
@@ -34,7 +40,7 @@ app.post('/api/chat', async (req, res) => {
   }
 
   try {
-    const agentResponse = await agentHandler(message, userId);
+    const agentResponse = await agentHandler(message, walletAddress, history || []);
     res.json({ response: agentResponse });
   } catch (error) {
     console.error('Error processing chat message:', error);

@@ -15,7 +15,11 @@ import {
   validateEnvironment,
 } from "@helpers/client";
 
-import { HumanMessage } from "@langchain/core/messages";
+import {
+  AIMessage,
+  HumanMessage,
+  BaseMessage,
+} from "@langchain/core/messages";
 import { DynamicTool } from "@langchain/core/tools";
 import { MemorySaver } from "@langchain/langgraph";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
@@ -398,7 +402,7 @@ async function initializeAgent(userId: string, client: Client): Promise<{ agent:
 ❗ IMPORTANT: Before answering, always check if you have a tool that can help with the user's request.
 You have a tool named 'get_fundraiser_contributors' that you MUST use when asked who has contributed to a fundraiser.
 
-Ready to help with your crypto operations on Base! What would you like to do? 🎉`,
+Ready to help with your crypto operations on Base! 🎉`,
     });
 
     agentStore[userId] = agent;
@@ -415,17 +419,30 @@ Ready to help with your crypto operations on Base! What would you like to do? �
 }
 
 // Process messages with better error handling
-async function processMessage(agent: Agent, config: AgentConfig, message: string): Promise<string> {
+async function processMessage(
+  agent: Agent,
+  config: AgentConfig,
+  message: string,
+  history: { role: "user" | "assistant"; content: string }[] = [],
+): Promise<string> {
   try {
-    console.log(`🤔 Processing: "${message}"`);
-    const response = await agent.invoke(
-      { messages: [new HumanMessage(message)] },
-      config,
+    console.log(`🤔 Processing: "${message}" with history of length ${history.length}`);
+
+    const messages: BaseMessage[] = history.map((msg) =>
+      msg.role === "user"
+        ? new HumanMessage(msg.content)
+        : new AIMessage(msg.content),
     );
-    
-    const responseContent = response.messages[response.messages.length - 1].content as string;
+    messages.push(new HumanMessage(message));
+
+    const response = (await agent.invoke({ messages }, config)) as {
+      messages: BaseMessage[];
+    };
+
+    const responseContent =
+      response.messages[response.messages.length - 1].content as string;
     console.log(`🤖 Response generated: ${responseContent.slice(0, 100)}...`);
-    
+
     return responseContent;
   } catch (error: any) {
     console.error("Error processing message:", error);
@@ -443,7 +460,12 @@ async function processMessage(agent: Agent, config: AgentConfig, message: string
 }
 
 // Handle incoming messages as a request/response function
-async function handleMessage(messageContent: string, senderAddress: string, client: Client): Promise<string> {
+async function handleMessage(
+  messageContent: string,
+  senderAddress: string,
+  client: Client,
+  history: { role: "user" | "assistant"; content: string }[] = [],
+): Promise<string> {
   let conversation: any = null;
   try {
     const botAddress = client.inboxId.toLowerCase();
@@ -471,7 +493,12 @@ async function handleMessage(messageContent: string, senderAddress: string, clie
     }
 
     // Process the message
-    const response = await processMessage(agent, config, messageContent);
+    const response = await processMessage(
+      agent,
+      config,
+      messageContent,
+      history,
+    );
     
     console.log(`🤖 Sending response to ${senderAddress}`);
 
@@ -512,7 +539,11 @@ async function startAgent() {
     // Return the client and handler for the API server
     return {
       client,
-      handleMessage: (message: string, userId: string) => handleMessage(message, userId, client),
+      handleMessage: (
+        message: string,
+        userId: string,
+        history: { role: "user" | "assistant"; content: string }[] = [],
+      ) => handleMessage(message, userId, client, history),
     };
 
   } catch (error) {

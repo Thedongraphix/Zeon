@@ -3338,7 +3338,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@langchain/core@npm:^0.3.19, @langchain/core@npm:^0.3.57":
+"@langchain/core@npm:^0.3.19":
   version: 0.3.57
   resolution: "@langchain/core@npm:0.3.57"
   dependencies:
@@ -3358,7 +3358,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@langchain/langgraph-checkpoint@npm:~0.0.17, @langchain/langgraph-checkpoint@npm:~0.0.18":
+"@langchain/langgraph-checkpoint@npm:~0.0.17":
   version: 0.0.18
   resolution: "@langchain/langgraph-checkpoint@npm:0.0.18"
   dependencies:
@@ -3407,24 +3407,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@langchain/langgraph@npm:^0.3.1":
-  version: 0.3.1
-  resolution: "@langchain/langgraph@npm:0.3.1"
-  dependencies:
-    "@langchain/langgraph-checkpoint": "npm:~0.0.18"
-    "@langchain/langgraph-sdk": "npm:~0.0.32"
-    uuid: "npm:^10.0.0"
-    zod: "npm:^3.23.8"
-  peerDependencies:
-    "@langchain/core": ">=0.2.36 <0.3.0 || >=0.3.40 < 0.4.0"
-    zod-to-json-schema: ^3.x
-  peerDependenciesMeta:
-    zod-to-json-schema:
-      optional: true
-  checksum: 10/3caeb435d5ca477235b1bb5f41c1b7d169f08c163b93cfba7cdd6989b1e6817b40e5d9bbde9e8f9cfaf11cac321fea8579f9a10018eaa7fdc8743e7bcf6314af
-  languageName: node
-  linkType: hard
-
 "@langchain/openai@npm:^0.3.14":
   version: 0.3.17
   resolution: "@langchain/openai@npm:0.3.17"
@@ -3436,20 +3418,6 @@ __metadata:
   peerDependencies:
     "@langchain/core": ">=0.3.29 <0.4.0"
   checksum: 10/e35c3efd034de08dfde7932b4623c5a1686005a5267fb9bd4eb9580e82177d31d7b59dbfa061db3d02cb391b714920c0e4ab251621d0ec99ebd346e5270c9929
-  languageName: node
-  linkType: hard
-
-"@langchain/openai@npm:^0.5.12":
-  version: 0.5.12
-  resolution: "@langchain/openai@npm:0.5.12"
-  dependencies:
-    js-tiktoken: "npm:^1.0.12"
-    openai: "npm:^4.96.0"
-    zod: "npm:^3.22.4"
-    zod-to-json-schema: "npm:^3.22.3"
-  peerDependencies:
-    "@langchain/core": ">=0.3.48 <0.4.0"
-  checksum: 10/1b3babd442170de1d04a60b735f7ab6df192cf58e87caca38aab9edf3850c560f5c19ffd0dd8c7379e60e5462c569779b63784b45e02070c2dc915cd21cae840
   languageName: node
   linkType: hard
 
@@ -15490,7 +15458,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"openai@npm:^4.77.0, openai@npm:^4.96.0":
+"openai@npm:^4.77.0":
   version: 4.104.0
   resolution: "openai@npm:4.104.0"
   dependencies:
@@ -21340,9 +21308,6 @@ __metadata:
     "@eslint/compat": "npm:^1.2.6"
     "@eslint/js": "npm:^9.19.0"
     "@ianvs/prettier-plugin-sort-imports": "npm:^4.4.1"
-    "@langchain/core": "npm:^0.3.57"
-    "@langchain/langgraph": "npm:^0.3.1"
-    "@langchain/openai": "npm:^0.5.12"
     "@types/eslint__js": "npm:^8.42.3"
     "@types/node": "npm:^22.13.0"
     "@xmtp/node-sdk": "npm:2.1.0"
