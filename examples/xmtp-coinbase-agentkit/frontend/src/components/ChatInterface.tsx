@@ -57,15 +57,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
 
     const userMessage = inputValue.trim();
     setInputValue('');
-
     addMessage(userMessage, user.wallet.address);
     setIsTyping(true);
 
+    // Default to the render URL if environment variable is not set
+    const apiUrl = process.env.REACT_APP_API_URL || 'https://zeon-hybrid-api.onrender.com';
+
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${apiUrl}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         body: JSON.stringify({
           message: userMessage,
@@ -78,12 +81,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get response from agent');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `Request failed with status ${response.status}`);
       }
 
       const data = await response.json();
+      if (!data.response) {
+        throw new Error('Invalid response format from server');
+      }
       addMessage(data.response, 'agent');
-
     } catch (error) {
       console.error('Failed to send message:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
@@ -294,4 +300,4 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
   );
 };
 
-export default ChatInterface; 
+export default ChatInterface;
