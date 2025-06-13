@@ -28,6 +28,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [showCopyToast, setShowCopyToast] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -125,6 +126,157 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
     return senderAddress === user?.wallet?.address;
   };
 
+  // Helper function to copy text to clipboard
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setShowCopyToast(true);
+      setTimeout(() => setShowCopyToast(false), 2000);
+      console.log('Copied to clipboard:', text);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setShowCopyToast(true);
+      setTimeout(() => setShowCopyToast(false), 2000);
+    }
+  };
+
+  // Helper function to extract wallet address from content
+  const extractWalletAddress = (content: string) => {
+    // Look for Ethereum addresses (0x followed by 40 hex characters)
+    const ethAddressRegex = /(0x[a-fA-F0-9]{40})/g;
+    const matches = content.match(ethAddressRegex);
+    return matches ? matches[0] : null;
+  };
+
+  // Helper function to detect and render QR codes
+  const renderMessageContent = (content: string) => {
+    // Check if the message contains a QR code (base64 SVG data)
+    const qrCodeRegex = /!\[.*?\]\(data:image\/svg\+xml;base64,([A-Za-z0-9+/=]+)\)/g;
+    
+    // Find all QR code matches
+    const matches = Array.from(content.matchAll(qrCodeRegex));
+    
+    // Extract wallet address for copy functionality
+    const walletAddress = extractWalletAddress(content);
+    
+    if (matches.length > 0) {
+      let result = [];
+      let lastIndex = 0;
+      
+      matches.forEach((match, index) => {
+        // Add text before the QR code
+        if (match.index! > lastIndex) {
+          const textBefore = content.substring(lastIndex, match.index!).trim();
+          if (textBefore) {
+            result.push(
+              <div key={`text-${index}`} className="mb-3 whitespace-pre-wrap break-words overflow-wrap-anywhere">
+                {textBefore}
+              </div>
+            );
+          }
+        }
+        
+        // Add the QR code
+        const base64Data = match[1];
+        try {
+          const svgData = atob(base64Data);
+          result.push(
+            <div key={`qr-${index}`} className="qr-code-container my-4">
+              <div className="qr-code-wrapper">
+                <div className="qr-code-display">
+                  <div 
+                    className="qr-code-svg"
+                    dangerouslySetInnerHTML={{ __html: svgData }}
+                  />
+                </div>
+                <div className="qr-code-actions">
+                  <div className="text-xs text-blue-300 mb-3 text-center">
+                    📱 Scan with your mobile wallet
+                  </div>
+                  {walletAddress && (
+                    <div className="wallet-address-section">
+                      <div className="wallet-address">
+                        <span className="address-text">{walletAddress}</span>
+                        <button
+                          onClick={() => copyToClipboard(walletAddress)}
+                          className="copy-button"
+                          title="Copy wallet address"
+                        >
+                          <ClipboardIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div className="text-xs text-blue-400 mt-1 text-center">
+                        Tap to copy wallet address
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        } catch (error) {
+          console.error('Failed to decode QR code:', error);
+          result.push(
+            <div key={`error-${index}`} className="text-red-400 my-2">
+              [QR Code - Display Error]
+            </div>
+          );
+        }
+        
+        lastIndex = match.index! + match[0].length;
+      });
+      
+      // Add any remaining text after the last QR code
+      if (lastIndex < content.length) {
+        const textAfter = content.substring(lastIndex).trim();
+        if (textAfter) {
+          result.push(
+            <div key="text-after" className="mt-3 whitespace-pre-wrap break-words overflow-wrap-anywhere">
+              {textAfter}
+            </div>
+          );
+        }
+      }
+      
+      return <div className="message-content">{result}</div>;
+    }
+    
+    // Regular text content (also check for wallet addresses to make them copyable)
+    if (walletAddress) {
+      const parts = content.split(walletAddress);
+      return (
+        <div className="message-content">
+          {parts.map((part, index) => (
+            <span key={index}>
+              {part}
+              {index < parts.length - 1 && (
+                <span className="inline-wallet-address">
+                  <span className="address-text">{walletAddress}</span>
+                  <button
+                    onClick={() => copyToClipboard(walletAddress)}
+                    className="inline-copy-button ml-1"
+                    title="Copy wallet address"
+                  >
+                    <ClipboardIcon className="h-3 w-3" />
+                  </button>
+                </span>
+              )}
+            </span>
+          ))}
+        </div>
+      );
+    }
+    
+    return <span className="whitespace-pre-wrap break-words overflow-wrap-anywhere">{content}</span>;
+  };
+
   return (
     <div className="min-h-screen black-gradient flex flex-col">
       
@@ -169,7 +321,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
 
             {/* Message List */}
             {messages.map((message) => (
-              <div key={message.id} className="flex space-x-3 sm:space-x-4">
+              <div key={message.id} className="flex space-x-3 sm:space-x-4 w-full">
                 
                 {/* Avatar */}
                 <div className="flex-shrink-0">
@@ -211,9 +363,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
                         ? 'message-error-modern'
                         : 'message-agent-modern'}
                   `}>
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {message.content}
-                    </p>
+                    <div className="text-sm leading-relaxed">
+                      {renderMessageContent(message.content)}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -246,8 +398,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* Input Area - Clean and Simple */}
-      <div className="p-4 sm:p-6 mb-4 sm:mb-6 mx-4 sm:mx-6">
+      {/* Input Area - Enhanced Mobile Experience */}
+      <div className="p-3 sm:p-6 mb-2 sm:mb-6 mx-3 sm:mx-6">
         <div className="max-w-4xl mx-auto">
           <div className="flex space-x-2 sm:space-x-3 items-end">
             <div className="flex-1 relative">
@@ -257,14 +409,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ask me anything about crypto operations..."
-                className="w-full px-4 sm:px-6 py-3 sm:py-4 glass-modern rounded-2xl text-white placeholder-blue-300/50 focus:outline-none border-blue-500/30 focus:border-blue-400 resize-none transition-all duration-300 text-sm sm:text-base"
+                className="w-full px-4 sm:px-6 py-4 sm:py-4 glass-modern rounded-2xl text-white placeholder-blue-300/70 focus:outline-none border-blue-500/30 focus:border-blue-400 resize-none transition-all duration-300 text-base sm:text-base leading-relaxed"
                 rows={1}
                 style={{ 
-                  minHeight: '48px', 
+                  minHeight: '56px', 
                   maxHeight: '120px',
-                  background: 'rgba(0, 0, 0, 0.60)',
+                  background: 'rgba(0, 0, 0, 0.70)',
                   backdropFilter: 'blur(20px) saturate(150%)',
-                  border: '1px solid rgba(59, 130, 246, 0.2)'
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  fontSize: '16px', // Prevents zoom on iOS
+                  lineHeight: '1.5'
                 }}
               />
               
@@ -278,24 +432,33 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
                     console.error('Failed to read clipboard:', err);
                   }
                 }}
-                className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 p-1.5 sm:p-2 hover:bg-blue-500/20 rounded-lg transition-colors duration-200"
+                className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 p-2 sm:p-2 hover:bg-blue-500/20 rounded-lg transition-colors duration-200"
               >
-                <ClipboardIcon className="h-4 w-4 text-blue-300 hover:text-white" />
+                <ClipboardIcon className="h-5 w-5 text-blue-300 hover:text-white" />
               </button>
             </div>
             
-            {/* Send Button - Same height as input */}
+            {/* Send Button - Enhanced for mobile */}
             <button
               onClick={sendMessage}
               disabled={!inputValue.trim() || isTyping}
-              className="px-4 sm:px-6 py-3 sm:py-4 blue-gradient text-white font-medium rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              style={{ height: '48px', minWidth: '48px' }}
+              className="px-4 sm:px-6 py-4 sm:py-4 blue-gradient text-white font-medium rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center touch-friendly"
+              style={{ height: '56px', minWidth: '56px' }}
             >
-              <PaperAirplaneIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+              <PaperAirplaneIcon className="h-5 w-5 sm:h-5 sm:w-5" />
             </button>
           </div>
         </div>
       </div>
+
+      {/* Copy Toast Notification */}
+      {showCopyToast && (
+        <div className="copy-toast">
+          <div className="copy-toast-content">
+            <span>✓ Copied to clipboard!</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

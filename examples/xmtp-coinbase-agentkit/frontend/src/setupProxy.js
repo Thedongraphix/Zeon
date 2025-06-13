@@ -6,16 +6,15 @@ module.exports = function(app) {
     createProxyMiddleware({
       target: 'https://zeon-hybrid-api.onrender.com',
       changeOrigin: true,
-      pathRewrite: {
-        '^/api': '/api', // don't rewrite paths
-      },
-      headers: {
-        'Connection': 'keep-alive'
-      },
-      onError: (err, req, res) => {
-        console.error('Proxy Error:', err);
-        res.status(500).json({ error: 'Proxy Error' });
-      }
     })
   );
-};
+
+  // Suppress source map warnings
+  const originalWarning = console.warn;
+  console.warn = function(message) {
+    if (message && message.includes && message.includes('source map')) {
+      return;
+    }
+    originalWarning.apply(console, arguments);
+  };
+}; 

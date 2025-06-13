@@ -98,7 +98,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 pt-20 sm:pt-24 md:pt-32 pb-12 md:pb-20 px-4 sm:px-6">
+      <div className="relative z-10 pt-24 sm:pt-32 md:pt-40 pb-12 md:pb-20 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           
           {/* Hero Section */}
