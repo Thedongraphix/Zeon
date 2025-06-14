@@ -177,7 +177,7 @@ const Footer: React.FC = () => {
           <div className="mt-12 sm:mt-16 pt-6 sm:pt-8 border-t border-white/10">
             <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
               <div className="text-xs sm:text-sm text-blue-300/70 text-center md:text-left">
-                © 2024 Zeon Protocol. All rights reserved.
+                © 2025 Zeon Protocol. All rights reserved.
               </div>
               <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-6 md:space-x-8 text-xs sm:text-sm">
                 <a 
