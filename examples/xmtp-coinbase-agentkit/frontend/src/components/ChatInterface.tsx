@@ -155,6 +155,104 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
     return matches ? matches[0] : null;
   };
 
+  // Helper function to extract transaction hash from content
+  const extractTransactionHash = (content: string) => {
+    // Look for transaction hashes (0x followed by 64 hex characters)
+    const txHashRegex = /(0x[a-fA-F0-9]{64})/g;
+    const matches = content.match(txHashRegex);
+    return matches ? matches : [];
+  };
+
+  // Helper function to generate Base Sepolia scan URLs
+  const getBaseScanUrl = (hashOrAddress: string, type: 'tx' | 'address' | 'token' = 'tx') => {
+    const baseUrl = 'https://sepolia.basescan.org';
+    switch (type) {
+      case 'tx':
+        return `${baseUrl}/tx/${hashOrAddress}`;
+      case 'address':
+        return `${baseUrl}/address/${hashOrAddress}`;
+      case 'token':
+        return `${baseUrl}/token/${hashOrAddress}`;
+      default:
+        return `${baseUrl}/search?q=${hashOrAddress}`;
+    }
+  };
+
+  // Helper function to render content with transaction links
+  const renderTransactionContent = (content: string, txHashes: string[], walletAddress: string | null) => {
+    let processedContent = content;
+    const elements: React.ReactNode[] = [];
+    
+    // Replace each transaction hash with a placeholder
+    txHashes.forEach((txHash, index) => {
+      processedContent = processedContent.replace(
+        txHash,
+        `__TX_LINK_${index}__`
+      );
+    });
+    
+    const parts = processedContent.split(/(__TX_LINK_\d+__)/);
+    
+    return (
+      <div className="message-content">
+        {parts.map((part, index) => {
+          const linkMatch = part.match(/^__TX_LINK_(\d+)__$/);
+          if (linkMatch) {
+            const txIndex = parseInt(linkMatch[1]);
+            const txHash = txHashes[txIndex];
+            const scanUrl = getBaseScanUrl(txHash, 'tx');
+            const shortHash = `${txHash.slice(0, 10)}...${txHash.slice(-8)}`;
+            
+            return (
+              <div key={`tx-${index}`} className="transaction-link-container my-2">
+                <a
+                  href={scanUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transaction-link"
+                >
+                  <span className="transaction-icon">🔍</span>
+                  <span className="transaction-text">View on Base Scan: {shortHash}</span>
+                  <span className="external-link-icon">↗</span>
+                </a>
+                <button
+                  onClick={() => copyToClipboard(txHash)}
+                  className="transaction-copy-button"
+                  title="Copy transaction hash"
+                >
+                  <ClipboardIcon className="h-4 w-4" />
+                </button>
+              </div>
+            );
+          }
+          
+          return (
+            <span key={index} className="whitespace-pre-wrap break-words overflow-wrap-anywhere">
+              {part}
+            </span>
+          );
+        })}
+        {walletAddress && (
+          <div className="wallet-address-section mt-3">
+            <div className="wallet-address">
+              <span className="address-text">{walletAddress}</span>
+              <button
+                onClick={() => copyToClipboard(walletAddress)}
+                className="copy-button"
+                title="Copy wallet address"
+              >
+                <ClipboardIcon className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="text-xs text-blue-400 mt-1 text-center">
+              Tap to copy wallet address
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Helper function to detect and render QR codes
   const renderMessageContent = (content: string) => {
     // Check if the message contains a QR code (base64 SVG data)
@@ -163,8 +261,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
     // Find all QR code matches
     const matches = Array.from(content.matchAll(qrCodeRegex));
     
-    // Extract wallet address for copy functionality
+    // Extract wallet address and transaction hashes for functionality
     const walletAddress = extractWalletAddress(content);
+    const txHashes = extractTransactionHash(content);
     
     if (matches.length > 0) {
       let result = [];
@@ -244,8 +343,43 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
           );
         }
       }
+
+      // Add transaction links if present
+      if (txHashes.length > 0) {
+        txHashes.forEach((txHash, index) => {
+          const scanUrl = getBaseScanUrl(txHash, 'tx');
+          const shortHash = `${txHash.slice(0, 10)}...${txHash.slice(-8)}`;
+          
+          result.push(
+            <div key={`qr-tx-${index}`} className="transaction-link-container my-2">
+              <a
+                href={scanUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transaction-link"
+              >
+                <span className="transaction-icon">🔍</span>
+                <span className="transaction-text">View on Base Scan: {shortHash}</span>
+                <span className="external-link-icon">↗</span>
+              </a>
+              <button
+                onClick={() => copyToClipboard(txHash)}
+                className="transaction-copy-button"
+                title="Copy transaction hash"
+              >
+                <ClipboardIcon className="h-4 w-4" />
+              </button>
+            </div>
+          );
+        });
+      }
       
       return <div className="message-content">{result}</div>;
+    }
+    
+    // Handle content with transaction hashes but no QR codes
+    if (txHashes.length > 0) {
+      return renderTransactionContent(content, txHashes, walletAddress);
     }
     
     // Regular text content (also check for wallet addresses to make them copyable)
