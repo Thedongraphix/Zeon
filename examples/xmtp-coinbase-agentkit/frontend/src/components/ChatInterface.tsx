@@ -255,8 +255,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
 
   // Helper function to detect and render QR codes
   const renderMessageContent = (content: string) => {
-    // Check if the message contains a QR code (base64 SVG data)
-    const qrCodeRegex = /!\[.*?\]\(data:image\/svg\+xml;base64,([A-Za-z0-9+/=]+)\)/g;
+    // Check if the message contains a QR code (base64 PNG data)
+    // This matches the backend PNG format from utils/blockchain.ts
+    const qrCodeRegex = /!\[.*?\]\(data:image\/png;base64,([A-Za-z0-9+/=]+)\)/g;
     
     // Find all QR code matches
     const matches = Array.from(content.matchAll(qrCodeRegex));
@@ -284,50 +285,43 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
         
         // Add the QR code
         const base64Data = match[1];
-        try {
-          const svgData = atob(base64Data);
-          result.push(
-            <div key={`qr-${index}`} className="qr-code-container my-4">
-              <div className="qr-code-wrapper">
-                <div className="qr-code-display">
-                  <div 
-                    className="qr-code-svg"
-                    dangerouslySetInnerHTML={{ __html: svgData }}
-                  />
+        const fullDataUrl = `data:image/png;base64,${base64Data}`;
+        
+        result.push(
+          <div key={`qr-${index}`} className="qr-code-container my-4">
+            <div className="qr-code-wrapper">
+              <div className="qr-code-display">
+                <img 
+                  src={fullDataUrl}
+                  alt="QR Code"
+                  className="qr-code-png"
+                />
+              </div>
+              <div className="qr-code-actions">
+                <div className="text-xs text-blue-300 mb-3 text-center">
+                  📱 Scan with your mobile wallet
                 </div>
-                <div className="qr-code-actions">
-                  <div className="text-xs text-blue-300 mb-3 text-center">
-                    📱 Scan with your mobile wallet
-                  </div>
-                  {walletAddress && (
-                    <div className="wallet-address-section">
-                      <div className="wallet-address">
-                        <span className="address-text">{walletAddress}</span>
-                        <button
-                          onClick={() => copyToClipboard(walletAddress)}
-                          className="copy-button"
-                          title="Copy wallet address"
-                        >
-                          <ClipboardIcon className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <div className="text-xs text-blue-400 mt-1 text-center">
-                        Tap to copy wallet address
-                      </div>
+                {walletAddress && (
+                  <div className="wallet-address-section">
+                    <div className="wallet-address">
+                      <span className="address-text">{walletAddress}</span>
+                      <button
+                        onClick={() => copyToClipboard(walletAddress)}
+                        className="copy-button"
+                        title="Copy wallet address"
+                      >
+                        <ClipboardIcon className="h-4 w-4" />
+                      </button>
                     </div>
-                  )}
-                </div>
+                    <div className="text-xs text-blue-400 mt-1 text-center">
+                      Tap to copy wallet address
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          );
-        } catch (error) {
-          console.error('Failed to decode QR code:', error);
-          result.push(
-            <div key={`error-${index}`} className="text-red-400 my-2">
-              [QR Code - Display Error]
-            </div>
-          );
-        }
+          </div>
+        );
         
         lastIndex = match.index! + match[0].length;
       });
