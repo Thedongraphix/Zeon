@@ -61,8 +61,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
     addMessage(userMessage, user.wallet.address);
     setIsTyping(true);
 
-    // Default to the render URL if environment variable is not set
-    const apiUrl = process.env.REACT_APP_API_URL || 'https://zeon-hybrid-api.onrender.com';
+    // Use relative URL for proxy in development, full URL for production
+    const apiUrl = process.env.NODE_ENV === 'development' ? '' : 'https://zeon-hybrid.onrender.com';
 
     try {
       const response = await fetch(`${apiUrl}/api/chat`, {

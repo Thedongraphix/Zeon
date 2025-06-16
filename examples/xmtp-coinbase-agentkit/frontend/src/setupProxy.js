@@ -4,7 +4,7 @@ module.exports = function(app) {
   app.use(
     '/api',
     createProxyMiddleware({
-      target: 'https://zeon-hybrid-api.onrender.com',
+      target: 'https://zeon-hybrid.onrender.com',
       changeOrigin: true,
     })
   );
