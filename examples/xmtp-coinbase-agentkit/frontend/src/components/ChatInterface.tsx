@@ -262,6 +262,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
     // Find all QR code matches
     const matches = Array.from(content.matchAll(qrCodeRegex));
     
+    // Debug logging
+    if (matches.length > 0) {
+      console.log('QR Code detected:', matches.length, 'matches found');
+      console.log('First match preview:', matches[0][0].substring(0, 100) + '...');
+    }
+    
     // Extract wallet address and transaction hashes for functionality
     const walletAddress = extractWalletAddress(content);
     const txHashes = extractTransactionHash(content);
@@ -295,6 +301,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
                   src={fullDataUrl}
                   alt="QR Code"
                   className="qr-code-png"
+                  style={{ 
+                    backgroundColor: 'transparent',
+                    filter: 'none',
+                    mixBlendMode: 'normal'
+                  }}
+                  onError={(e) => {
+                    console.error('QR Code failed to load:', e);
+                    console.log('Base64 data length:', base64Data.length);
+                  }}
+                  onLoad={() => {
+                    console.log('QR Code loaded successfully');
+                  }}
                 />
               </div>
               <div className="qr-code-actions">
