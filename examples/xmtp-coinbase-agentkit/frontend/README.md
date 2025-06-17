@@ -31,7 +31,7 @@ A sleek, modern frontend for your XMTP crypto agent built with React, TypeScript
 
 3. **Start the development server:**
    ```bash
-   yarn start
+   yarn start or npm start
    ```
 
 ## Environment Variables
