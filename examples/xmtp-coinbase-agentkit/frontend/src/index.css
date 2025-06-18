@@ -557,13 +557,14 @@
   border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
-/* Enhanced QR Code Display Styling */
+/* Enhanced QR Code Display Styling - FIXED */
 .qr-code-container {
   display: flex;
   justify-content: center;
   align-items: center;
   margin: 1rem 0;
   width: 100%;
+  overflow: visible !important;
 }
 
 .qr-code-wrapper {
@@ -571,29 +572,37 @@
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 1.5rem;
-  padding: 1rem;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-width: 300px;
+  max-width: 400px;
+  min-width: 320px;
+  min-height: 380px;
   width: 100%;
+  overflow: visible !important;
 }
 
 .qr-code-display {
   background: white;
   border-radius: 12px;
-  padding: 12px;
+  padding: 15px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   margin-bottom: 1rem;
   position: relative;
+  min-width: 280px;
+  min-height: 280px;
+  overflow: visible !important;
 }
 
 .qr-code-png {
-  max-width: 256px;
-  max-height: 256px;
-  width: 100%;
-  height: auto;
-  display: block;
+  width: 256px !important;
+  height: 256px !important;
+  max-width: 256px !important;
+  max-height: 256px !important;
+  min-width: 256px !important;
+  min-height: 256px !important;
+  display: block !important;
   image-rendering: -webkit-crisp-edges;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
@@ -602,6 +611,37 @@
   background: transparent !important;
   filter: none !important;
   opacity: 1 !important;
+  object-fit: contain !important;
+  flex-shrink: 0 !important;
+  border: none !important;
+  margin: 0 !important;
+}
+
+/* Critical QR code overrides */
+img[src*="data:image/png;base64"] {
+  width: 256px !important;
+  height: 256px !important;
+  max-width: 256px !important;
+  max-height: 256px !important;
+  object-fit: contain !important;
+  flex-shrink: 0 !important;
+}
+
+/* Ensure chat containers don't constrain QR codes */
+.message-content img,
+.chat-message img {
+  max-width: none !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* Override any global image constraints for QR codes */
+.message-content img[src*="data:image/png;base64"],
+.chat-message img[src*="data:image/png;base64"] {
+  width: 256px !important;
+  height: 256px !important;
+  max-width: 256px !important;
+  max-height: 256px !important;
 }
 
 .qr-code-actions {
@@ -703,20 +743,28 @@
   transform: scale(1.1);
 }
 
-/* Mobile QR code optimizations */
+/* Mobile QR code optimizations - FIXED */
 @media (max-width: 640px) {
   .qr-code-wrapper {
-    max-width: 280px;
-    padding: 0.75rem;
+    max-width: 90vw;
+    min-width: 300px;
+    padding: 16px;
+    min-height: 360px;
   }
   
   .qr-code-display {
-    padding: 8px;
+    padding: 12px;
+    min-width: 260px;
+    min-height: 260px;
   }
   
   .qr-code-png {
-    max-width: 200px;
-    max-height: 200px;
+    width: 240px !important;
+    height: 240px !important;
+    max-width: 240px !important;
+    max-height: 240px !important;
+    min-width: 240px !important;
+    min-height: 240px !important;
   }
   
   .qr-code-container {
@@ -736,13 +784,25 @@
 
 @media (max-width: 480px) {
   .qr-code-wrapper {
-    max-width: 240px;
-    padding: 0.5rem;
+    max-width: 90vw;
+    min-width: 280px;
+    padding: 12px;
+    min-height: 340px;
+  }
+  
+  .qr-code-display {
+    padding: 10px;
+    min-width: 240px;
+    min-height: 240px;
   }
   
   .qr-code-png {
-    max-width: 160px;
-    max-height: 160px;
+    width: 220px !important;
+    height: 220px !important;
+    max-width: 220px !important;
+    max-height: 220px !important;
+    min-width: 220px !important;
+    min-height: 220px !important;
   }
   
   .address-text {

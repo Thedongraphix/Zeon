@@ -111,7 +111,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
     { label: 'Check Balance', command: 'What is my wallet balance?' },
     { label: 'Recent Transactions', command: 'Show my recent transactions' },
     { label: 'Gas Prices', command: 'What are current gas prices?' },
-    { label: 'Portfolio Value', command: 'Show my portfolio value' }
+    { label: 'Test QR Code', command: 'Generate a test QR code for debugging' }
   ];
 
   const formatTime = (date: Date) => {
@@ -149,11 +149,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
 
   // Enhanced helper function to parse agent response (matches backend JSON format)
   const parseAgentResponse = (rawResponse: string) => {
+    console.log('🔍 Parsing raw response:', rawResponse);
+    
     try {
       // First, try to parse as JSON (backend returns JSON strings for QR responses)
-      const parsed = JSON.parse(rawResponse);
+      let parsed = JSON.parse(rawResponse);
+      console.log('✅ Successfully parsed JSON:', parsed);
+      
+      // Check if the parsed result is a string (double-encoded JSON)
+      if (typeof parsed === 'string') {
+        console.log('🔄 Detected double-encoded JSON, parsing again...');
+        try {
+          parsed = JSON.parse(parsed);
+          console.log('✅ Successfully parsed double-encoded JSON:', parsed);
+        } catch (e) {
+          console.log('❌ Failed to parse double-encoded JSON');
+        }
+      }
       
       if (parsed.qrCode && parsed.message) {
+        console.log('🎯 Found QR response format');
+        console.log('QR Code data length:', parsed.qrCode.length);
+        console.log('QR Code starts with:', parsed.qrCode.substring(0, 50));
+        
         return {
           type: 'qr_response',
           message: parsed.message,
@@ -163,6 +181,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
       }
       
       if (parsed.message) {
+        console.log('📝 Found JSON message format');
         return {
           type: 'json_message',
           message: parsed.message,
@@ -172,6 +191,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
       }
       
       // If JSON but not in expected format, treat as regular text
+      console.log('⚠️ JSON format not recognized, treating as text');
       return {
         type: 'text',
         message: rawResponse,
@@ -179,11 +199,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
         transactionHash: null
       };
     } catch (e) {
+      console.log('❌ JSON parse failed, checking for markdown QR format');
       // Not JSON, check for embedded QR codes in markdown format
       const qrCodeRegex = /!\[.*?\]\(data:image\/png;base64,([A-Za-z0-9+/=]+)\)/;
       const qrMatch = rawResponse.match(qrCodeRegex);
       
       if (qrMatch) {
+        console.log('📱 Found markdown QR format');
+        console.log('QR base64 length:', qrMatch[1].length);
         return {
           type: 'markdown_qr',
           message: rawResponse,
@@ -192,6 +215,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
         };
       }
       
+      console.log('📄 No special format detected, treating as plain text');
       return {
         type: 'text',
         message: rawResponse,
@@ -285,23 +309,23 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
             {parsedResponse.message}
           </div>
           
-          {/* QR Code Display */}
-          <div className="qr-code-container my-4">
-            <div className="qr-code-wrapper">
-              <div className="qr-code-display">
-                <img 
-                  src={parsedResponse.qrCodeDataUrl}
-                  alt="QR Code for Transaction"
-                  className="qr-code-png"
-                  onError={(e) => {
-                    console.error('QR Code failed to load');
-                    e.currentTarget.style.display = 'none';
-                  }}
-                  onLoad={() => {
-                    console.log('QR Code loaded successfully');
-                  }}
-                />
-              </div>
+                     {/* QR Code Display */}
+           <div className="qr-code-container my-4">
+             <div className="qr-code-wrapper">
+               <div className="qr-code-display">
+                 <img 
+                   src={parsedResponse.qrCodeDataUrl}
+                   alt="QR Code for Transaction"
+                   className="qr-code-png"
+                   onError={(e) => {
+                     console.error('QR Code failed to load');
+                     console.error('Invalid URL:', e.currentTarget.src.substring(0, 100) + '...');
+                   }}
+                   onLoad={() => {
+                     console.log('QR Code loaded successfully - Full size 256x256');
+                   }}
+                 />
+               </div>
                              <div className="qr-code-actions">
                  <div className="text-xs text-blue-300 mb-3 text-center">
                    📱 Scan with your mobile wallet to contribute

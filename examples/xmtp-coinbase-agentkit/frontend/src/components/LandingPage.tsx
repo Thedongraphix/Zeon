@@ -110,7 +110,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                   alt="Base Logo" 
                   className="w-5 h-5"
                 />
-                <span className="text-sm font-semibold text-blue-300">Live on Base Sepolia</span>g
+                <span className="text-sm font-semibold text-blue-300">Live on Base Sepolia</span>
               </div>
             </div>
 
