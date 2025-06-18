@@ -593,6 +593,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid #eee; /* For visual debugging */
 }
 
 .qr-code-png {
@@ -1052,4 +1053,40 @@ img[src*="data:image/png;base64"] {
     width: 18px;
     height: 18px;
   }
+}
+
+/* QR Code Display - Following the guide exactly */
+.qr-code-display {
+  width: 256px !important;
+  height: 256px !important;
+  padding: 5px !important;
+  box-sizing: content-box !important;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-bottom: 1rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #eee; /* For visual debugging */
+}
+
+.qr-code-png {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  display: block !important;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  border-radius: 4px;
+}
+
+/* Critical override for QR code images */
+#qr-code-image {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  display: block !important;
 }

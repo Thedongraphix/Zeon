@@ -289,194 +289,110 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
     return match ? match[1] : null;
   };
 
+  // NEW: Function to extract QR data from API response (following the guide exactly)
+  const extractQRFromResponse = (responseText: string) => {
+    try {
+      console.log('🔍 Extracting QR from response:', responseText.substring(0, 100) + '...');
+      
+      // Parse the JSON string from the response
+      const qrPayloadString = responseText;
+      const qrData = JSON.parse(qrPayloadString);
+      
+      console.log('✅ Successfully parsed QR payload:', qrData);
+      
+      if (qrData.qrCode && qrData.message) {
+        return {
+          message: qrData.message,
+          qrCode: qrData.qrCode
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('❌ Failed to extract QR data:', error);
+      return null;
+    }
+  };
+
   // Enhanced function to render message content with proper QR code and link handling
   const renderMessageContent = (content: string) => {
-    // Parse the response to handle JSON format from backend
-    const parsedResponse = parseAgentResponse(content);
+    // First, try to extract QR data using the guide's method
+    const qrData = extractQRFromResponse(content);
     
-    console.log('Parsed response:', parsedResponse);
-    
-    // Extract additional data
-    const txHashes = extractTransactionHash(parsedResponse.message);
-    const walletAddress = extractWalletAddress(parsedResponse.message);
-    
-    // Handle QR code responses
-    if (parsedResponse.type === 'qr_response' && parsedResponse.qrCodeDataUrl) {
-    return (
-      <div className="message-content">
-          {/* Message text */}
-          <div className="mb-4 whitespace-pre-wrap break-words overflow-wrap-anywhere">
-            {parsedResponse.message}
-          </div>
-          
-                     {/* QR Code Display */}
-           <div className="qr-code-container my-4">
-             <div className="qr-code-wrapper">
-               <div className="qr-code-display">
-                 <img 
-                   src={parsedResponse.qrCodeDataUrl}
-                   alt="QR Code for Transaction"
-                   className="qr-code-png"
-                   onError={(e) => {
-                     console.error('QR Code failed to load');
-                     console.error('Invalid URL:', e.currentTarget.src.substring(0, 100) + '...');
-                   }}
-                   onLoad={() => {
-                     console.log('QR Code loaded successfully - Full size 256x256');
-                   }}
-                 />
-               </div>
-                             <div className="qr-code-actions">
-                 <div className="text-xs text-blue-300 mb-3 text-center">
-                   📱 Scan with your mobile wallet to contribute
-                 </div>
-                 
-                 {/* Coinbase Wallet Quick Contribute Link */}
-                 {walletAddress && (() => {
-                   const contributionAmount = extractContributionAmount(parsedResponse.message);
-                   const coinbaseWalletLink = contributionAmount ? generateCoinbaseWalletLink(walletAddress, contributionAmount) : null;
-                   
-                   return coinbaseWalletLink ? (
-                     <div className="coinbase-wallet-link-container mb-4">
-                       <a
-                         href={coinbaseWalletLink}
-                         className="coinbase-wallet-link"
-                         title={`Contribute ${contributionAmount} ETH via Coinbase Wallet`}
-                       >
-                         <div className="coinbase-wallet-icon">
-                           <img 
-                             src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iMTYiIGZpbGw9IiMwMDUyRkYiLz4KPHBhdGggZD0iTTEzIDEzSDIwVjE5SDEzVjEzWiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+"
-                             alt="Coinbase"
-                             className="w-5 h-5"
-                           />
-                         </div>
-                         <span className="coinbase-wallet-text">
-                           Contribute {contributionAmount} ETH via Coinbase Wallet
-                         </span>
-                         <span className="external-link-icon">↗</span>
-                       </a>
-                       <div className="text-xs text-blue-400 mt-1 text-center">
-                         Opens Coinbase Wallet with pre-filled transaction
-                       </div>
-                     </div>
-                   ) : null;
-                 })()}
-                 
-                 {/* Transaction Hash Link */}
-                 {parsedResponse.transactionHash && (
-                   <div className="transaction-link-container mb-3">
-                     <a
-                       href={getBaseScanUrl(parsedResponse.transactionHash, 'tx')}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transaction-link"
-                >
-                  <span className="transaction-icon">🔍</span>
-                       <span className="transaction-text">
-                         View on Base Scan: {`${parsedResponse.transactionHash.slice(0, 10)}...${parsedResponse.transactionHash.slice(-8)}`}
-                       </span>
-                  <span className="external-link-icon">↗</span>
-                </a>
-                <button
-                       onClick={() => copyToClipboard(parsedResponse.transactionHash!)}
-                  className="transaction-copy-button"
-                  title="Copy transaction hash"
-                >
-                  <ClipboardIcon className="h-4 w-4" />
-                </button>
-              </div>
-                 )}
-                 
-                 {/* Wallet Address Section */}
-        {walletAddress && (
-                   <div className="wallet-address-section">
-            <div className="wallet-address">
-              <span className="address-text">{walletAddress}</span>
-              <button
-                onClick={() => copyToClipboard(walletAddress)}
-                className="copy-button"
-                title="Copy wallet address"
-              >
-                <ClipboardIcon className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="text-xs text-blue-400 mt-1 text-center">
-              Tap to copy wallet address
-            </div>
-          </div>
-        )}
-      </div>
-            </div>
-          </div>
-          
-          {/* Additional Transaction Links */}
-          {txHashes.length > 0 && (
-            <div className="mt-3">
-              {txHashes.map((txHash, index) => {
-                if (txHash === parsedResponse.transactionHash) return null; // Skip if already displayed above
-                
-                return (
-                  <div key={`tx-${index}`} className="transaction-link-container mb-2">
-                    <a
-                      href={getBaseScanUrl(txHash, 'tx')}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="transaction-link"
-                    >
-                      <span className="transaction-icon">🔍</span>
-                      <span className="transaction-text">
-                        View on Base Scan: {`${txHash.slice(0, 10)}...${txHash.slice(-8)}`}
-                      </span>
-                      <span className="external-link-icon">↗</span>
-                    </a>
-                    <button
-                      onClick={() => copyToClipboard(txHash)}
-                      className="transaction-copy-button"
-                      title="Copy transaction hash"
-                    >
-                      <ClipboardIcon className="h-4 w-4" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      );
-    }
-    
-    // Handle markdown QR codes (fallback)
-    if (parsedResponse.type === 'markdown_qr' && parsedResponse.qrCodeDataUrl) {
-      const messageWithoutQR = parsedResponse.message.replace(/!\[.*?\]\(data:image\/png;base64,([A-Za-z0-9+/=]+)\)/g, '');
+    if (qrData) {
+      console.log('🎯 Found QR data using guide method');
+      console.log('QR Code data length:', qrData.qrCode.length);
+      console.log('QR Code starts with:', qrData.qrCode.substring(0, 50));
+      
+      // Extract additional data
+      const txHashes = extractTransactionHash(qrData.message);
+      const walletAddress = extractWalletAddress(qrData.message);
       
       return (
         <div className="message-content">
-          {/* Message text without QR markdown */}
-          {messageWithoutQR.trim() && (
-            <div className="mb-4 whitespace-pre-wrap break-words overflow-wrap-anywhere">
-              {messageWithoutQR.trim()}
-              </div>
-          )}
+          {/* Message text */}
+          <div className="mb-4 whitespace-pre-wrap break-words overflow-wrap-anywhere">
+            {qrData.message}
+          </div>
           
-          {/* QR Code Display */}
+          {/* QR Code Display - Following the guide exactly */}
           <div className="qr-code-container my-4">
             <div className="qr-code-wrapper">
+              {/* Dedicated QR code container with exact 256x256 dimensions */}
               <div className="qr-code-display">
                 <img 
-                  src={parsedResponse.qrCodeDataUrl}
-                  alt="QR Code"
+                  id="qr-code-image"
+                  src={qrData.qrCode}
+                  alt="Contribution QR Code"
                   className="qr-code-png"
                   onError={(e) => {
-                    console.error('QR Code failed to load');
-                    e.currentTarget.style.display = 'none';
+                    console.error('❌ QR Code failed to load');
+                    console.error('Failed source:', e.currentTarget.src.substring(0, 100) + '...');
+                  }}
+                  onLoad={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                    console.log('✅ QR Code loaded successfully - Full size 256x256');
+                    console.log('Image dimensions:', e.currentTarget.naturalWidth, 'x', e.currentTarget.naturalHeight);
                   }}
                 />
               </div>
+              
               <div className="qr-code-actions">
                 <div className="text-xs text-blue-300 mb-3 text-center">
-                  📱 Scan with your mobile wallet
+                  📱 Scan with your mobile wallet to contribute
                 </div>
                 
+                {/* Coinbase Wallet Quick Contribute Link */}
+                {walletAddress && (() => {
+                  const contributionAmount = extractContributionAmount(qrData.message);
+                  const coinbaseWalletLink = contributionAmount ? generateCoinbaseWalletLink(walletAddress, contributionAmount) : null;
+                  
+                  return coinbaseWalletLink ? (
+                    <div className="coinbase-wallet-link-container mb-4">
+                      <a
+                        href={coinbaseWalletLink}
+                        className="coinbase-wallet-link"
+                        title={`Contribute ${contributionAmount} ETH via Coinbase Wallet`}
+                      >
+                        <div className="coinbase-wallet-icon">
+                          <img 
+                            src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iMTYiIGZpbGw9IiMwMDUyRkYiLz4KPHBhdGggZD0iTTEzIDEzSDIwVjE5SDEzVjEzWiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+"
+                            alt="Coinbase"
+                            className="w-5 h-5"
+                          />
+                        </div>
+                        <span className="coinbase-wallet-text">
+                          Contribute {contributionAmount} ETH via Coinbase Wallet
+                        </span>
+                        <span className="external-link-icon">↗</span>
+                      </a>
+                      <div className="text-xs text-blue-400 mt-1 text-center">
+                        Opens Coinbase Wallet with pre-filled transaction
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+                
+                {/* Wallet Address Section */}
                 {walletAddress && (
                   <div className="wallet-address-section">
                     <div className="wallet-address">
@@ -489,16 +405,59 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
                         <ClipboardIcon className="h-4 w-4" />
                       </button>
                     </div>
+                    <div className="text-xs text-blue-400 mt-1 text-center">
+                      Tap to copy wallet address
+                    </div>
                   </div>
                 )}
               </div>
             </div>
           </div>
           
-          {/* Transaction Links */}
-          {txHashes.length > 0 && renderTransactionLinks(txHashes)}
+          {/* Additional Transaction Links */}
+          {txHashes.length > 0 && (
+            <div className="mt-3">
+              {txHashes.map((txHash, index) => (
+                <div key={`tx-${index}`} className="transaction-link-container mb-2">
+                  <a
+                    href={getBaseScanUrl(txHash, 'tx')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="transaction-link"
+                  >
+                    <span className="transaction-icon">🔍</span>
+                    <span className="transaction-text">
+                      View on Base Scan: {`${txHash.slice(0, 10)}...${txHash.slice(-8)}`}
+                    </span>
+                    <span className="external-link-icon">↗</span>
+                  </a>
+                  <button
+                    onClick={() => copyToClipboard(txHash)}
+                    className="transaction-copy-button"
+                    title="Copy transaction hash"
+                  >
+                    <ClipboardIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
             </div>
-          );
+          )}
+        </div>
+      );
+    }
+    
+    // Fallback to original parsing method for non-QR responses
+    const parsedResponse = parseAgentResponse(content);
+    console.log('Parsed response (fallback):', parsedResponse);
+    
+    // Extract additional data
+    const txHashes = extractTransactionHash(parsedResponse.message);
+    const walletAddress = extractWalletAddress(parsedResponse.message);
+    
+    // Handle other response types...
+    if (parsedResponse.type === 'qr_response' && parsedResponse.qrCodeDataUrl) {
+      // This should not happen now since we handle QR responses above
+      return renderTextWithLinks(parsedResponse.message, txHashes, walletAddress);
     }
     
     // Handle regular text with potential transaction hashes or wallet addresses
