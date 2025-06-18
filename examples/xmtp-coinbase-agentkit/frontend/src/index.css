@@ -934,3 +934,73 @@
     font-size: 0.675rem;
   }
 }
+
+/* Coinbase Wallet Link Styles */
+.coinbase-wallet-link-container {
+  @apply w-full;
+}
+
+.coinbase-wallet-link {
+  @apply flex items-center justify-center w-full p-4 rounded-2xl transition-all duration-300;
+  background: linear-gradient(135deg, #0052FF 0%, #0041CC 100%);
+  border: 1px solid rgba(0, 82, 255, 0.3);
+  color: white;
+  text-decoration: none;
+  gap: 12px;
+  font-weight: 500;
+  font-size: 14px;
+  box-shadow: 0 4px 20px rgba(0, 82, 255, 0.2);
+}
+
+.coinbase-wallet-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(0, 82, 255, 0.3);
+  background: linear-gradient(135deg, #0041CC 0%, #0052FF 100%);
+}
+
+.coinbase-wallet-link:active {
+  transform: translateY(0px);
+  box-shadow: 0 2px 15px rgba(0, 82, 255, 0.2);
+}
+
+.coinbase-wallet-icon {
+  @apply flex items-center justify-center flex-shrink-0;
+}
+
+.coinbase-wallet-text {
+  @apply flex-1 text-center font-medium;
+}
+
+.coinbase-wallet-link .external-link-icon {
+  @apply text-white/80 text-sm flex-shrink-0;
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .coinbase-wallet-link {
+    padding: 16px 12px;
+    font-size: 13px;
+    gap: 8px;
+  }
+  
+  .coinbase-wallet-text {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .coinbase-wallet-link {
+    padding: 14px 10px;
+    font-size: 12px;
+  }
+  
+  .coinbase-wallet-text {
+    font-size: 12px;
+    line-height: 1.3;
+  }
+  
+  .coinbase-wallet-icon img {
+    width: 18px;
+    height: 18px;
+  }
+}
