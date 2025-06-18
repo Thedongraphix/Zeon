@@ -302,8 +302,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
     
     // Handle QR code responses
     if (parsedResponse.type === 'qr_response' && parsedResponse.qrCodeDataUrl) {
-      return (
-        <div className="message-content">
+    return (
+      <div className="message-content">
           {/* Message text */}
           <div className="mb-4 whitespace-pre-wrap break-words overflow-wrap-anywhere">
             {parsedResponse.message}
@@ -367,45 +367,45 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
                    <div className="transaction-link-container mb-3">
                      <a
                        href={getBaseScanUrl(parsedResponse.transactionHash, 'tx')}
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       className="transaction-link"
-                     >
-                       <span className="transaction-icon">🔍</span>
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transaction-link"
+                >
+                  <span className="transaction-icon">🔍</span>
                        <span className="transaction-text">
                          View on Base Scan: {`${parsedResponse.transactionHash.slice(0, 10)}...${parsedResponse.transactionHash.slice(-8)}`}
                        </span>
-                       <span className="external-link-icon">↗</span>
-                     </a>
-                     <button
+                  <span className="external-link-icon">↗</span>
+                </a>
+                <button
                        onClick={() => copyToClipboard(parsedResponse.transactionHash!)}
-                       className="transaction-copy-button"
-                       title="Copy transaction hash"
-                     >
-                       <ClipboardIcon className="h-4 w-4" />
-                     </button>
-                   </div>
+                  className="transaction-copy-button"
+                  title="Copy transaction hash"
+                >
+                  <ClipboardIcon className="h-4 w-4" />
+                </button>
+              </div>
                  )}
                  
                  {/* Wallet Address Section */}
-                 {walletAddress && (
+        {walletAddress && (
                    <div className="wallet-address-section">
-                     <div className="wallet-address">
-                       <span className="address-text">{walletAddress}</span>
-                       <button
-                         onClick={() => copyToClipboard(walletAddress)}
-                         className="copy-button"
-                         title="Copy wallet address"
-                       >
-                         <ClipboardIcon className="h-4 w-4" />
-                       </button>
-                     </div>
-                     <div className="text-xs text-blue-400 mt-1 text-center">
-                       Tap to copy wallet address
-                     </div>
-                   </div>
-                 )}
-               </div>
+            <div className="wallet-address">
+              <span className="address-text">{walletAddress}</span>
+              <button
+                onClick={() => copyToClipboard(walletAddress)}
+                className="copy-button"
+                title="Copy wallet address"
+              >
+                <ClipboardIcon className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="text-xs text-blue-400 mt-1 text-center">
+              Tap to copy wallet address
+            </div>
+          </div>
+        )}
+      </div>
             </div>
           </div>
           
@@ -455,7 +455,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
           {messageWithoutQR.trim() && (
             <div className="mb-4 whitespace-pre-wrap break-words overflow-wrap-anywhere">
               {messageWithoutQR.trim()}
-            </div>
+              </div>
           )}
           
           {/* QR Code Display */}
@@ -497,8 +497,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
           
           {/* Transaction Links */}
           {txHashes.length > 0 && renderTransactionLinks(txHashes)}
-        </div>
-      );
+            </div>
+          );
     }
     
     // Handle regular text with potential transaction hashes or wallet addresses
@@ -513,24 +513,24 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
           <div key={`tx-link-${index}`} className="transaction-link-container mb-2">
             <a
               href={getBaseScanUrl(txHash, 'tx')}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="transaction-link"
-            >
-              <span className="transaction-icon">🔍</span>
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transaction-link"
+              >
+                <span className="transaction-icon">🔍</span>
               <span className="transaction-text">
                 View on Base Scan: {`${txHash.slice(0, 10)}...${txHash.slice(-8)}`}
               </span>
-              <span className="external-link-icon">↗</span>
-            </a>
-            <button
-              onClick={() => copyToClipboard(txHash)}
-              className="transaction-copy-button"
-              title="Copy transaction hash"
-            >
-              <ClipboardIcon className="h-4 w-4" />
-            </button>
-          </div>
+                <span className="external-link-icon">↗</span>
+              </a>
+              <button
+                onClick={() => copyToClipboard(txHash)}
+                className="transaction-copy-button"
+                title="Copy transaction hash"
+              >
+                <ClipboardIcon className="h-4 w-4" />
+              </button>
+            </div>
         ))}
       </div>
     );
@@ -545,8 +545,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
       processedContent = processedContent.replace(
         new RegExp(txHash.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
         `__TX_PLACEHOLDER_${index}__`
-      );
-    });
+          );
+        });
     
     // Replace wallet address with placeholder
     if (walletAddress) {
@@ -559,8 +559,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
     // Split content and process placeholders
     const parts = processedContent.split(/(__TX_PLACEHOLDER_\d+__|__WALLET_PLACEHOLDER__)/);
     
-    return (
-      <div className="message-content">
+      return (
+        <div className="message-content">
         <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere">
           {parts.map((part, index) => {
             // Handle transaction hash placeholders
