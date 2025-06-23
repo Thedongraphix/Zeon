@@ -16,7 +16,7 @@
 
 3. **Start development**:
    ```bash
-   # Terminal 1: Start frontend
+   # Start frontend
    yarn dev:frontend
    
    # Backend is deployed to Render at:
@@ -56,10 +56,23 @@ yarn dev:frontend
 yarn build:frontend
 
 # Backend development (if running locally)
-cd backend && yarn dev
+yarn dev:backend
 
 # Clean all node_modules
 yarn clean
+```
+
+## Alternative Commands (using workspace names directly)
+
+```bash
+# Frontend
+yarn workspace zeon-frontend start
+yarn workspace zeon-frontend build
+
+# Backend  
+yarn workspace zeon-hybrid-api dev
+yarn workspace zeon-hybrid-api start
+yarn workspace zeon-hybrid-api build
 ```
 
 ## QR Code Issues Fixed

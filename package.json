@@ -9,12 +9,12 @@
     "backend"
   ],
   "scripts": {
-    "install:all": "yarn install && yarn workspace frontend install && yarn workspace backend install",
-    "dev:frontend": "yarn workspace frontend start",
-    "dev:backend": "yarn workspace backend dev",
-    "build:frontend": "yarn workspace frontend build",
-    "build:backend": "yarn workspace backend build",
-    "start:backend": "yarn workspace backend start",
+    "install:all": "yarn install && yarn workspace zeon-frontend install && yarn workspace zeon-hybrid-api install",
+    "dev:frontend": "yarn workspace zeon-frontend start",
+    "dev:backend": "yarn workspace zeon-hybrid-api dev",
+    "build:frontend": "yarn workspace zeon-frontend build",
+    "build:backend": "yarn workspace zeon-hybrid-api build",
+    "start:backend": "yarn workspace zeon-hybrid-api start",
     "clean": "rm -rf node_modules && rm -rf frontend/node_modules && rm -rf backend/node_modules"
   },
   "engines": {
