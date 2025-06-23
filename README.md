@@ -22,7 +22,7 @@ zeon-protocol/
 
 ## Quick Start
 
-### Prerequisites
+### Prerequisites for this project
 
 - Node.js v20 or higher
 - Yarn v4.6.0
