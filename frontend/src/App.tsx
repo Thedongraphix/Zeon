@@ -59,15 +59,23 @@ function App() {
     <PrivyProvider
       appId={process.env.REACT_APP_PRIVY_APP_ID || 'cmbf4m9j800fple0npr5qdpwz'}
       config={{
+        // Appearance settings
         appearance: {
           theme: 'dark',
           accentColor: '#3b82f6',
           logo: undefined,
         },
+        
+        // Authentication methods
         loginMethods: ['wallet', 'email'],
+        
+        // Wallet configuration
         embeddedWallets: {
           createOnLogin: 'all-users',
         },
+        
+        // Supported chains
+        supportedChains: [baseSepolia, sepolia],
       }}
     >
       <QueryClientProvider client={queryClient}>

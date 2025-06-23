@@ -147,84 +147,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
     }
   };
 
-  // Enhanced helper function to parse agent response (matches backend JSON format)
-  const parseAgentResponse = (rawResponse: string) => {
-    console.log('🔍 Parsing raw response:', rawResponse);
-    
-    try {
-      // First, try to parse as JSON (backend returns JSON strings for QR responses)
-      let parsed = JSON.parse(rawResponse);
-      console.log('✅ Successfully parsed JSON:', parsed);
-      
-      // Check if the parsed result is a string (double-encoded JSON)
-      if (typeof parsed === 'string') {
-        console.log('🔄 Detected double-encoded JSON, parsing again...');
-        try {
-          parsed = JSON.parse(parsed);
-          console.log('✅ Successfully parsed double-encoded JSON:', parsed);
-        } catch (e) {
-          console.log('❌ Failed to parse double-encoded JSON');
-        }
-      }
-      
-      if (parsed.qrCode && parsed.message) {
-        console.log('🎯 Found QR response format');
-        console.log('QR Code data length:', parsed.qrCode.length);
-        console.log('QR Code starts with:', parsed.qrCode.substring(0, 50));
-        
-        return {
-          type: 'qr_response',
-          message: parsed.message,
-          qrCodeDataUrl: parsed.qrCode,
-          transactionHash: parsed.transactionHash || null
-        };
-      }
-      
-      if (parsed.message) {
-        console.log('📝 Found JSON message format');
-        return {
-          type: 'json_message',
-          message: parsed.message,
-          qrCodeDataUrl: null,
-          transactionHash: parsed.transactionHash || null
-        };
-      }
-      
-      // If JSON but not in expected format, treat as regular text
-      console.log('⚠️ JSON format not recognized, treating as text');
-      return {
-        type: 'text',
-        message: rawResponse,
-        qrCodeDataUrl: null,
-        transactionHash: null
-      };
-    } catch (e) {
-      console.log('❌ JSON parse failed, checking for markdown QR format');
-      // Not JSON, check for embedded QR codes in markdown format
-      const qrCodeRegex = /!\[.*?\]\(data:image\/png;base64,([A-Za-z0-9+/=]+)\)/;
-      const qrMatch = rawResponse.match(qrCodeRegex);
-      
-      if (qrMatch) {
-        console.log('📱 Found markdown QR format');
-        console.log('QR base64 length:', qrMatch[1].length);
-        return {
-          type: 'markdown_qr',
-          message: rawResponse,
-          qrCodeDataUrl: `data:image/png;base64,${qrMatch[1]}`,
-          transactionHash: null
-        };
-      }
-      
-      console.log('📄 No special format detected, treating as plain text');
-      return {
-        type: 'text',
-        message: rawResponse,
-        qrCodeDataUrl: null,
-        transactionHash: null
-      };
-    }
-  };
-
   // Helper function to extract transaction hashes from content
   const extractTransactionHash = (content: string) => {
     // Look for transaction hashes (0x followed by 64 hex characters)
@@ -294,19 +216,38 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
     try {
       console.log('🔍 Extracting QR from response:', responseText.substring(0, 100) + '...');
       
-      // Parse the JSON string from the response
-      const qrPayloadString = responseText;
-      const qrData = JSON.parse(qrPayloadString);
-      
-      console.log('✅ Successfully parsed QR payload:', qrData);
-      
-      if (qrData.qrCode && qrData.message) {
-        return {
-          message: qrData.message,
-          qrCode: qrData.qrCode
-        };
+      // First try: Parse the entire response as JSON (for standalone QR requests)
+      try {
+        const qrData = JSON.parse(responseText);
+        console.log('✅ Successfully parsed entire response as JSON:', qrData);
+        
+        if (qrData.qrCode && qrData.message) {
+          return {
+            message: qrData.message,
+            qrCode: qrData.qrCode
+          };
+        }
+      } catch (fullParseError) {
+        console.log('📝 Response is not pure JSON, looking for embedded QR data...');
       }
       
+      // Second try: Look for JSON pattern within the response text (for deployment responses)
+      const jsonMatch = responseText.match(/\{[^{}]*"qrCode"[^{}]*"message"[^{}]*\}|\{[^{}]*"message"[^{}]*"qrCode"[^{}]*\}/);
+      
+      if (jsonMatch) {
+        console.log('🎯 Found embedded JSON pattern:', jsonMatch[0].substring(0, 100) + '...');
+        const qrData = JSON.parse(jsonMatch[0]);
+        console.log('✅ Successfully parsed embedded QR payload:', qrData);
+        
+        if (qrData.qrCode && qrData.message) {
+          return {
+            message: qrData.message,
+            qrCode: qrData.qrCode
+          };
+        }
+      }
+      
+      console.log('❌ No QR data found in response');
       return null;
     } catch (error) {
       console.error('❌ Failed to extract QR data:', error);
@@ -446,22 +387,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
       );
     }
     
-    // Fallback to original parsing method for non-QR responses
-    const parsedResponse = parseAgentResponse(content);
-    console.log('Parsed response (fallback):', parsedResponse);
-    
-    // Extract additional data
-    const txHashes = extractTransactionHash(parsedResponse.message);
-    const walletAddress = extractWalletAddress(parsedResponse.message);
-    
-    // Handle other response types...
-    if (parsedResponse.type === 'qr_response' && parsedResponse.qrCodeDataUrl) {
-      // This should not happen now since we handle QR responses above
-      return renderTextWithLinks(parsedResponse.message, txHashes, walletAddress);
-    }
+    // Fallback: Handle as regular text with potential transaction hashes or wallet addresses
+    const txHashes = extractTransactionHash(content);
+    const walletAddress = extractWalletAddress(content);
     
     // Handle regular text with potential transaction hashes or wallet addresses
-    return renderTextWithLinks(parsedResponse.message, txHashes, walletAddress);
+    return renderTextWithLinks(content, txHashes, walletAddress);
   };
 
   // Helper function to render transaction links
