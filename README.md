@@ -14,11 +14,12 @@ zeon-protocol/
 
 ## Features
 
-- 🤖 **AI Agent**: LangChain-powered conversational AI
+- 🤖 **AI Agent**: Coinbase AgentKit + LangChain powered conversational AI
 - 💬 **XMTP Messaging**: End-to-end encrypted messaging
-- 🔗 **Blockchain Integration**: Deploy and interact with smart contracts on Base Sepolia
+- 🔗 **Blockchain Integration**: Coinbase Developer Platform (CDP) integration on Base Sepolia
 - 📱 **QR Code Generation**: Generate payment QR codes for mobile wallet contributions
 - 🎯 **Crowdfunding**: Create and manage fundraising campaigns
+- 💸 **Enhanced Crypto Operations**: Built-in wallet management and USDC operations
 
 ## Quick Start
 
@@ -43,22 +44,29 @@ yarn dev:frontend
 
 ### Environment Setup
 
-Create a `.env` file in the `backend/` directory:
+Create a `.env` file in the `backend/zeon-hybrid/` directory:
 
 ```bash
+# XMTP Keys (generate with yarn gen:keys)
 WALLET_KEY=your_private_key_here
 ENCRYPTION_KEY=your_encryption_key_here
 XMTP_ENV=dev
+
+# Coinbase Developer Platform
+CDP_API_KEY_NAME=your_cdp_api_key_name
+CDP_API_KEY_PRIVATE_KEY=your_cdp_private_key
 NETWORK_ID=base-sepolia
+
+# OpenRouter API
 OPENROUTER_API_KEY=your_openrouter_api_key
 ```
 
 ## Architecture
 
 - **Frontend**: React + TypeScript + Tailwind CSS
-- **Backend**: Node.js + Express + XMTP + Ethers.js
-- **Blockchain**: Base Sepolia testnet
-- **AI**: OpenRouter API with LangChain
+- **Backend**: Node.js + Express + XMTP + Coinbase AgentKit
+- **Blockchain**: Base Sepolia testnet via Coinbase Developer Platform
+- **AI**: OpenRouter API with AgentKit + LangChain
 - **Messaging**: XMTP protocol
 
 ## Usage
