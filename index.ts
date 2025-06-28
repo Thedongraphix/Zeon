@@ -28,6 +28,7 @@ import express from 'express';
 import cors from 'cors';
 import QRCode from 'qrcode';
 
+console.log("🔧 Validating environment variables...");
 const {
   WALLET_KEY,
   ENCRYPTION_KEY,
@@ -45,6 +46,16 @@ const {
   "NETWORK_ID",
   "OPENROUTER_API_KEY",
 ]);
+
+console.log("✅ Environment variables validated:", {
+  WALLET_KEY: WALLET_KEY ? `${WALLET_KEY.substring(0, 10)}...` : 'MISSING',
+  ENCRYPTION_KEY: ENCRYPTION_KEY ? `${ENCRYPTION_KEY.substring(0, 10)}...` : 'MISSING',
+  XMTP_ENV: XMTP_ENV || 'MISSING',
+  CDP_API_KEY_NAME: CDP_API_KEY_NAME || 'MISSING',
+  CDP_API_KEY_PRIVATE_KEY: CDP_API_KEY_PRIVATE_KEY ? 'SET' : 'MISSING',
+  NETWORK_ID: NETWORK_ID || 'MISSING',
+  OPENROUTER_API_KEY: OPENROUTER_API_KEY ? `${OPENROUTER_API_KEY.substring(0, 10)}...` : 'MISSING'
+});
 
 // Storage constants
 const XMTP_STORAGE_DIR = ".data/xmtp";
@@ -292,7 +303,16 @@ async function initializeAgent(
 
     return { agent, config: agentConfig };
   } catch (error) {
-    console.error("Failed to initialize agent:", error);
+    console.error("❌ Failed to initialize agent:", error);
+    
+    if (error instanceof Error) {
+      console.error("❌ Agent initialization error details:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack?.split('\n').slice(0, 5).join('\n')
+      });
+    }
+    
     throw error;
   }
 }
@@ -343,9 +363,15 @@ async function processMessage(
 
     return response.trim();
   } catch (error) {
-    console.error("Error processing message:", error);
+    console.error("❌ Error processing message:", error);
     
     if (error instanceof Error) {
+      console.error("❌ Processing error details:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack?.split('\n').slice(0, 5).join('\n') // First 5 lines of stack
+      });
+      
       if (error.message.includes("401")) {
         return `❌ Authentication error with AI service. Please check the API configuration.`;
       } else if (error.message.includes("insufficient funds")) {
@@ -354,10 +380,12 @@ async function processMessage(
         return `❌ Invalid address format! Please provide a valid Ethereum address (starting with 0x).`;
       } else if (error.message.includes("network")) {
         return `❌ Network error! Please check your connection and try again.`;
+      } else if (error.message.includes("API")) {
+        return `❌ API error: ${error.message}`;
       }
     }
 
-    return "Sorry, I encountered an error while processing your request. Please try again later.";
+    return `❌ Sorry, I encountered an error while processing your request: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again later.`;
   }
 }
 
@@ -408,7 +436,26 @@ async function handleMessage(
     return response;
 
   } catch (error) {
-    console.error("Error handling message:", error);
+    console.error("❌ Error handling message:", error);
+    
+    // Log detailed error information for debugging
+    if (error instanceof Error) {
+      console.error("❌ Error name:", error.name);
+      console.error("❌ Error message:", error.message);
+      console.error("❌ Error stack:", error.stack);
+      
+      // Return more specific error messages based on error type
+      if (error.message.includes("CDP") || error.message.includes("wallet")) {
+        return "❌ Wallet initialization error. Please check your CDP configuration and try again.";
+      } else if (error.message.includes("OpenAI") || error.message.includes("OpenRouter")) {
+        return "❌ AI service error. Please check your API key configuration.";
+      } else if (error.message.includes("network") || error.message.includes("fetch")) {
+        return "❌ Network connectivity error. Please try again in a moment.";
+      }
+    } else {
+      console.error("❌ Non-Error exception:", JSON.stringify(error));
+    }
+    
     return "❌ Sorry, I'm having technical difficulties. Please try again in a moment!";
   }
 }
@@ -516,11 +563,13 @@ async function main() {
     }
     
     try {
+      console.log(`🔄 Processing message: "${message}" for session: ${sessionId}`);
       const startTime = Date.now();
       const response = await agent.handleMessage(message, sessionId);
       const processingTime = Date.now() - startTime;
       
       console.log(`⚡ Processing time: ${processingTime}ms`);
+      console.log(`✅ Response generated: ${response.substring(0, 100)}${response.length > 100 ? '...' : ''}`);
       
       res.send({ 
         response,
@@ -531,8 +580,20 @@ async function main() {
         }
       });
     } catch (error) {
-      console.error("Error handling API message:", error);
-      res.status(500).send({ error: 'Failed to process message' });
+      console.error("❌ Error handling API message:", error);
+      
+      if (error instanceof Error) {
+        console.error("❌ API Error details:", {
+          name: error.name,
+          message: error.message,
+          stack: error.stack?.split('\n').slice(0, 3).join('\n')
+        });
+      }
+      
+      res.status(500).send({ 
+        error: 'Failed to process message',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   };
 
