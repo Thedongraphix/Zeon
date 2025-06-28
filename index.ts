@@ -456,10 +456,25 @@ async function main() {
   const app = express();
   const PORT = process.env.PORT || 3001;
 
-  // Middleware
+  // Request logging middleware
+  app.use((req, res, next) => {
+    const origin = req.get('origin') || req.get('referer') || 'no-origin';
+    console.log(`📍 ${req.method} ${req.path} from origin: ${origin}`);
+    next();
+  });
+
+  // CORS middleware
   app.use(cors({
-    origin: ['http://localhost:3000', 'https://zeon-frontend.vercel.app', /\.vercel\.app$/],
-    credentials: true
+    origin: [
+      'http://localhost:3000', 
+      'https://zeon-frontend.vercel.app', 
+      'https://www.zeonai.xyz',
+      'https://zeonai.xyz',
+      /\.vercel\.app$/
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
   }));
   app.use(express.json({ limit: '10mb' }));
 
