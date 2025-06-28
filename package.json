@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "compile-contract": "tsx compile-contract.ts",
-    "build": "yarn compile-contract && tsc",
+    "build": "npm run compile-contract && tsc",
     "start": "node dist/index.js",
     "dev": "tsx --watch index.ts",
     "gen:keys": "tsx ../../scripts/generateKeys.ts"
