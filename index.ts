@@ -180,7 +180,7 @@ async function generateFundraiserQR(walletAddress: string, amount?: string): Pro
     });
     
     return qrCodeData;
-  } catch (error) {
+            } catch (error) {
     console.error('Error generating QR code:', error);
     throw new Error('Failed to generate QR code');
   }
@@ -220,6 +220,14 @@ async function initializeAgent(
       cdpWalletData: storedWalletData || undefined,
       networkId: NETWORK_ID || "base-sepolia",
     };
+
+    console.log("⚙️  Configuring CDP Wallet Provider with:", {
+      apiKeyName: config.apiKeyName,
+      apiKeyPrivateKeyIsSet: !!config.apiKeyPrivateKey,
+      privateKeyLength: config.apiKeyPrivateKey?.length,
+      cdpWalletDataIsSet: !!config.cdpWalletData,
+      networkId: config.networkId,
+    });
 
     const walletProvider = await CdpWalletProvider.configureWithWallet(config);
 
@@ -371,15 +379,15 @@ async function processMessage(
         message: error.message,
         stack: error.stack?.split('\n').slice(0, 5).join('\n') // First 5 lines of stack
       });
-      
-      if (error.message.includes("401")) {
-        return `❌ Authentication error with AI service. Please check the API configuration.`;
-      } else if (error.message.includes("insufficient funds")) {
+
+    if (error.message.includes("401")) {
+      return `❌ Authentication error with AI service. Please check the API configuration.`;
+    } else if (error.message.includes("insufficient funds")) {
         return `❌ Insufficient funds! Please make sure you have enough tokens in your wallet for this transaction. You can get testnet USDC from the Base Sepolia faucet.`;
-      } else if (error.message.includes("invalid address")) {
+    } else if (error.message.includes("invalid address")) {
         return `❌ Invalid address format! Please provide a valid Ethereum address (starting with 0x).`;
-      } else if (error.message.includes("network")) {
-        return `❌ Network error! Please check your connection and try again.`;
+    } else if (error.message.includes("network")) {
+      return `❌ Network error! Please check your connection and try again.`;
       } else if (error.message.includes("API")) {
         return `❌ API error: ${error.message}`;
       }
@@ -515,8 +523,8 @@ async function main() {
     origin: [
       'http://localhost:3000', 
       'https://zeon-frontend.vercel.app', 
-      'https://www.zeonai.xyz',
-      'https://zeonai.xyz',
+        'https://www.zeonai.xyz',
+        'https://zeonai.xyz',
       /\.vercel\.app$/
     ],
     credentials: true,
@@ -527,7 +535,7 @@ async function main() {
 
   // Health check endpoint
   app.get('/health', (_req, res) => {
-    res.status(200).json({ 
+      res.status(200).json({ 
       status: 'ok', 
       timestamp: new Date().toISOString(),
       agent: agent ? 'ready' : 'initializing'
