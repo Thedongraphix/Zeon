@@ -1,23 +1,25 @@
 {
   "name": "zeon-hybrid-api",
   "version": "1.0.0",
-  "description": "Zeon AI Agent with XMTP",
+  "description": "Zeon AI Agent with XMTP and Coinbase AgentKit",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
     "compile-contract": "tsx compile-contract.ts",
     "build": "yarn compile-contract && tsc",
     "start": "node dist/index.js",
-    "dev": "tsx --watch index.ts"
+    "dev": "tsx --watch index.ts",
+    "gen:keys": "tsx ../../scripts/generateKeys.ts"
   },
   "dependencies": {
+    "@coinbase/agentkit": "^0.1.0",
+    "@coinbase/agentkit-langchain": "^0.1.0",
     "@langchain/core": "^0.3.19",
     "@langchain/langgraph": "^0.2.21",
     "@langchain/openai": "^0.3.14",
     "@xmtp/node-sdk": "^2.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "ethers": "^6.12.0",
     "express": "^4.19.2",
     "qrcode": "^1.5.3",
     "solc": "^0.8.20",
