@@ -237,12 +237,12 @@ async function initializeAgent(
         walletActionProvider(),
         erc20ActionProvider(),
         cdpApiActionProvider({
-          apiKeyName: CDP_API_KEY_NAME,
-          apiKeyPrivateKey: CDP_API_KEY_PRIVATE_KEY.replace(/\\n/g, "\n"),
+          apiKeyId: CDP_API_KEY_NAME,
+          apiKeySecret: CDP_API_KEY_PRIVATE_KEY.replace(/\\n/g, "\n"),
         }),
         cdpWalletActionProvider({
-          apiKeyName: CDP_API_KEY_NAME,
-          apiKeyPrivateKey: CDP_API_KEY_PRIVATE_KEY.replace(/\\n/g, "\n"),
+          apiKeyId: CDP_API_KEY_NAME,
+          apiKeySecret: CDP_API_KEY_PRIVATE_KEY.replace(/\\n/g, "\n"),
         }),
       ],
     });
