@@ -3,8 +3,8 @@ services:
     name: zeon-hybrid-api
     env: node
     plan: free
-    buildCommand: npm install --legacy-peer-deps && npm run build
-    startCommand: npm start
+    buildCommand: cd backend/zeon-hybrid && npm install --legacy-peer-deps && npm run build
+    startCommand: cd backend/zeon-hybrid && npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_VERSION
