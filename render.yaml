@@ -3,17 +3,17 @@ services:
     name: zeon-hybrid-api
     env: node
     plan: free
-    buildCommand: cd backend/zeon-hybrid && npm install --legacy-peer-deps && npm run build
-    startCommand: cd backend/zeon-hybrid && npm start
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_VERSION
         value: 20
-      - key: WALLET_KEY
+      - key: CDP_API_KEY_NAME
         sync: false
-      - key: ENCRYPTION_KEY
+      - key: CDP_API_KEY_PRIVATE_KEY
         sync: false
+      - key: NETWORK_ID
+        value: base-sepolia
       - key: OPENROUTER_API_KEY
         sync: false
-      - key: XMTP_ENV
-        value: dev

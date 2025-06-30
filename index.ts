@@ -22,26 +22,8 @@ dotenv.config({ path: '.env.local' });
 
 console.log("🔧 Validating environment variables...");
 
-// Simple environment validation function
-function validateEnvironment(requiredVars: string[]) {
-  const missing = [];
-  const result: Record<string, string> = {};
-  
-  for (const varName of requiredVars) {
-    const value = process.env[varName];
-    if (!value) {
-      missing.push(varName);
-    } else {
-      result[varName] = value;
-    }
-  }
-  
-  if (missing.length > 0) {
-    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
-  }
-  
-  return result;
-}
+// Import validation from helpers
+import { validateEnvironment } from "./helpers/client.js";
 
 const {
   CDP_API_KEY_NAME,

@@ -1,52 +1,6 @@
 import { getRandomValues } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { IdentifierKind, type Client, type Signer } from "@xmtp/node-sdk";
-import { fromString, toString } from "uint8arrays";
-import { createWalletClient, http } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import { base } from "viem/chains";
-
-type Hex = `0x${string}`;
-type SignMessageReturnType = Hex | Uint8Array;
-
-interface User {
-  key: `0x${string}`;
-  account: ReturnType<typeof privateKeyToAccount>;
-  wallet: ReturnType<typeof createWalletClient>;
-}
-
-export const createUser = (key: string): User => {
-  const account = privateKeyToAccount(key as `0x${string}`);
-  return {
-    key: key as `0x${string}`,
-    account,
-    wallet: createWalletClient({
-      account,
-      chain: base,
-      transport: http(),
-    }),
-  };
-};
-
-export const createSigner = (key: string): Signer => {
-  const sanitizedKey = key.startsWith("0x") ? key : `0x${key}`;
-  const user = createUser(sanitizedKey);
-  return {
-    type: "EOA",
-    getIdentifier: () => ({
-      identifierKind: IdentifierKind.Ethereum,
-      identifier: user.account.address.toLowerCase(),
-    }),
-    signMessage: async (message: string) => {
-      const signature = await user.wallet.signMessage({
-        message,
-        account: user.account,
-      });
-      return toBytes(signature);
-    },
-  };
-};
 
 /**
  * Generate a random encryption key
@@ -56,89 +10,31 @@ export const generateEncryptionKeyHex = () => {
   /* Generate a random 32-byte encryption key */
   const uint8Array = getRandomValues(new Uint8Array(32));
   /* Convert the encryption key to a hex string */
-  const hex = toString(uint8Array, "hex");
+  const hex = Array.from(uint8Array)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
   return `0x${hex}`;
 };
 
 /**
- * Get the encryption key from a hex string
- * @param hex - The hex string
- * @returns The encryption key
- * @throws Error if the key is not exactly 32 bytes (64 hex characters without 0x prefix)
+ * Generate a random wallet private key
+ * @returns The private key as a hex string with 0x prefix
  */
-export const getEncryptionKeyFromHex = (hex: string) => {
-  /* Clean and convert the hex string to lowercase */
-  const cleanHex = hex.trim().toLowerCase();
-  const sanitizedHex = cleanHex.startsWith("0x") ? cleanHex.slice(2) : cleanHex;
-
-  /* Validate hex string length (32 bytes = 64 hex characters) */
-  if (sanitizedHex.length !== 64) {
-    throw new Error(`Encryption key must be exactly 32 bytes (64 hex characters). Got ${sanitizedHex.length} characters.`);
-  }
-
-  /* Validate that it's a valid hex string */
-  if (!/^[0-9a-f]{64}$/.test(sanitizedHex)) {
-    throw new Error("Invalid hexadecimal characters in encryption key");
-  }
-
-  /* Convert the hex string to an encryption key */
-  return fromString(sanitizedHex, "hex");
+export const generatePrivateKeyHex = () => {
+  /* Generate a random 32-byte private key */
+  const uint8Array = getRandomValues(new Uint8Array(32));
+  /* Convert the private key to a hex string */
+  const hex = Array.from(uint8Array)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+  return `0x${hex}`;
 };
 
-export const getDbPath = (description: string = "xmtp") => {
-  //Checks if the environment is a Railway deployment
-  const volumePath = process.env.RAILWAY_VOLUME_MOUNT_PATH ?? ".data/xmtp";
-  // Create database directory if it doesn't exist
-  if (!fs.existsSync(volumePath)) {
-    fs.mkdirSync(volumePath, { recursive: true });
-  }
-  return `${volumePath}/${description}.db3`;
-};
-
-export const logAgentDetails = async (
-  clients: Client | Client[],
-): Promise<void> => {
-  const clientArray = Array.isArray(clients) ? clients : [clients];
-  const clientsByAddress = clientArray.reduce<Record<string, Client[]>>(
-    (acc, client) => {
-      const address = client.accountIdentifier?.identifier as string;
-      acc[address] = acc[address] ?? [];
-      acc[address].push(client);
-      return acc;
-    },
-    {},
-  );
-
-  for (const [address, clientGroup] of Object.entries(clientsByAddress)) {
-    const firstClient = clientGroup[0];
-    const inboxId = firstClient.inboxId;
-    const environments = clientGroup
-      .map((c: Client) => c.options?.env ?? "dev")
-      .join(", ");
-    console.log(`\x1b[38;2;252;76;52m
-        ██╗  ██╗███╗   ███╗████████╗██████╗ 
-        ╚██╗██╔╝████╗ ████║╚══██╔══╝██╔══██╗
-         ╚███╔╝ ██╔████╔██║   ██║   ██████╔╝
-         ██╔██╗ ██║╚██╔╝██║   ██║   ██╔═══╝ 
-        ██╔╝ ██╗██║ ╚═╝ ██║   ██║   ██║     
-        ╚═╝  ╚═╝╚═╝     ╚═╝   ╚═╝   ╚═╝     
-      \x1b[0m`);
-
-    const urls = [`http://xmtp.chat/dm/${address}`];
-
-    const conversations = await firstClient.conversations.list();
-    const installations = await firstClient.preferences.inboxState();
-
-    console.log(`
-    ✓ XMTP Client:
-    • Address: ${address}
-    • Installations: ${installations.installations.length}
-    • Conversations: ${conversations.length}
-    • InboxId: ${inboxId}
-    • Networks: ${environments}
-    ${urls.map((url) => `• URL: ${url}`).join("\n")}`);
-  }
-};
+/**
+ * Validate environment variables
+ * @param vars - Array of required environment variable names
+ * @returns Object containing the environment variables
+ */
 export function validateEnvironment(vars: string[]): Record<string, string> {
   const missing = vars.filter((v) => !process.env[v]);
 
@@ -178,17 +74,17 @@ export function validateEnvironment(vars: string[]): Record<string, string> {
   }, {});
 }
 
-// Fix the toBytes function
-function toBytes(signature: string | Uint8Array): Uint8Array {
-  if (typeof signature === 'string') {
-    // Remove '0x' prefix if present
-    const hex = signature.startsWith('0x') ? signature.slice(2) : signature;
-    return fromString(hex, 'hex');
+/**
+ * Get storage path for application data
+ * @param description - Description of the data being stored
+ * @returns Path to the storage directory
+ */
+export const getStoragePath = (description: string = "data") => {
+  const volumePath = process.env.RAILWAY_VOLUME_MOUNT_PATH ?? ".data";
+  // Create directory if it doesn't exist
+  if (!fs.existsSync(volumePath)) {
+    fs.mkdirSync(volumePath, { recursive: true });
   }
-  // If it's already a Uint8Array, return it
-  if (signature instanceof Uint8Array) {
-    return signature;
-  }
-  throw new Error('Invalid signature format');
-}
+  return path.join(volumePath, `${description}`);
+};
 
