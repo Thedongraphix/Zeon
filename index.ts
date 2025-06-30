@@ -257,16 +257,16 @@ async function initializeAgent(
     );
 
     const config = {
-      apiKeyName: CDP_API_KEY_NAME,
-      apiKeyPrivateKey: CDP_API_KEY_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      apiKeyId: CDP_API_KEY_NAME,
+      apiKeySecret: CDP_API_KEY_PRIVATE_KEY.replace(/\\n/g, "\n"),
       cdpWalletData: storedWalletData || undefined,
       networkId: NETWORK_ID || "base-sepolia",
     };
 
     console.log("⚙️  Configuring CDP Wallet Provider with:", {
-      apiKeyName: config.apiKeyName,
-      apiKeyPrivateKeyIsSet: !!config.apiKeyPrivateKey,
-      privateKeyLength: config.apiKeyPrivateKey?.length,
+      apiKeyId: config.apiKeyId,
+      apiKeySecretIsSet: !!config.apiKeySecret,
+      privateKeyLength: config.apiKeySecret?.length,
       cdpWalletDataIsSet: !!config.cdpWalletData,
       networkId: config.networkId,
     });
@@ -279,12 +279,12 @@ async function initializeAgent(
         walletActionProvider(),
         erc20ActionProvider(),
         cdpApiActionProvider({
-          apiKeyName: CDP_API_KEY_NAME,
-          apiKeyPrivateKey: CDP_API_KEY_PRIVATE_KEY.replace(/\\n/g, "\n"),
+          apiKeyId: CDP_API_KEY_NAME,
+          apiKeySecret: CDP_API_KEY_PRIVATE_KEY.replace(/\\n/g, "\n"),
         }),
         cdpWalletActionProvider({
-          apiKeyName: CDP_API_KEY_NAME,
-          apiKeyPrivateKey: CDP_API_KEY_PRIVATE_KEY.replace(/\\n/g, "\n"),
+          apiKeyId: CDP_API_KEY_NAME,
+          apiKeySecret: CDP_API_KEY_PRIVATE_KEY.replace(/\\n/g, "\n"),
         }),
       ],
     });
