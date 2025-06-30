@@ -25,6 +25,8 @@ console.log("🔧 Validating environment variables...");
 
 // Import validation from helpers
 import { validateEnvironment } from "./helpers/client.js";
+// Import blockchain utilities
+import { generateFundraiserLink, formatFundraiserResponse } from "./utils/blockchain.js";
 
 const {
   CDP_API_KEY_NAME,
@@ -190,6 +192,13 @@ Your capabilities include:
 - Providing guidance on fundraising strategies
 - Explaining blockchain and cryptocurrency concepts
 
+*IMPORTANT FUNDRAISING GUIDELINES:*
+- When users request a "fundraiser" for a specific ETH amount, create a simple contribution wallet setup rather than deploying a token
+- For token creation, total supply must be a whole number (e.g., 1000, not 0.5)
+- Always generate QR codes for easy contributions after creating fundraisers
+- Provide clear wallet addresses and Base Sepolia scan links
+- Include contribution tracking and sharing capabilities
+
 Key features:
 - You operate on the ${NETWORK_ID} network
 - You can create secure wallets for users
@@ -202,6 +211,8 @@ Important guidelines:
 - Provide clear step-by-step guidance
 - Ask clarifying questions when needed
 - Be helpful, friendly, and professional
+- For fundraising, focus on wallet-to-wallet contributions rather than token deployment
+- Always include shareable links and QR codes for contributions
 
 Current user: ${userId}
 Wallet Address: ${walletAddress}
@@ -508,6 +519,62 @@ async function main() {
 
   // API endpoints
   app.post('/api/chat', handleChatRequest);
+
+  // NEW: Fundraiser creation endpoint
+  app.post('/api/fundraiser', async (req, res) => {
+    console.log('📝 Fundraiser creation request:', JSON.stringify(req.body, null, 2));
+    
+    const { walletAddress, goalAmount, fundraiserName, description, userWallet } = req.body;
+    
+    if (!walletAddress || !goalAmount || !fundraiserName) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: walletAddress, goalAmount, fundraiserName',
+        received: req.body
+      });
+    }
+    
+    try {
+      console.log(`🎯 Creating fundraiser "${fundraiserName}" for ${goalAmount} ETH`);
+      
+      // Generate the formatted response with sharing link
+      const response = formatFundraiserResponse(
+        walletAddress,
+        fundraiserName,
+        goalAmount,
+        description
+      );
+      
+      // Generate sharing link
+      const sharingLink = generateFundraiserLink(
+        walletAddress,
+        goalAmount,
+        fundraiserName,
+        description
+      );
+      
+      console.log(`✅ Fundraiser created with link: ${sharingLink}`);
+      
+      res.json({ 
+        response,
+        fundraiserLink: sharingLink,
+        walletAddress,
+        goalAmount,
+        fundraiserName,
+        description,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          network: NETWORK_ID
+        }
+      });
+    } catch (error) {
+      console.error("❌ Error creating fundraiser:", error);
+      
+      res.status(500).json({ 
+        error: 'Failed to create fundraiser',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
 
   // Start the server
   app.listen(PORT, async () => {

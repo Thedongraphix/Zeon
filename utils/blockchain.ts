@@ -240,3 +240,68 @@ Your fundraiser has been successfully deployed on Base Sepolia!
     return mainResponse;
   }
 };
+
+// NEW: Generate fundraiser sharing link
+export const generateFundraiserLink = (
+  walletAddress: string,
+  goalAmount: string,
+  fundraiserName: string,
+  description?: string,
+  currentAmount?: string
+): string => {
+  const baseUrl = process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:3000' 
+    : 'https://zeonai.xyz';
+  
+  const params = new URLSearchParams({
+    goal: goalAmount,
+    name: encodeURIComponent(fundraiserName),
+  });
+  
+  if (description) {
+    params.append('description', encodeURIComponent(description));
+  }
+  
+  if (currentAmount && currentAmount !== '0') {
+    params.append('current', currentAmount);
+  }
+  
+  return `${baseUrl}/fundraiser/${walletAddress}?${params.toString()}`;
+};
+
+// NEW: Enhanced fundraiser response formatter with sharing links
+export const formatFundraiserResponse = (
+  walletAddress: string,
+  fundraiserName: string,
+  goalAmount: string,
+  description?: string
+): string => {
+  const contractUrl = generateBaseScanLink(walletAddress, 'address');
+  const shortWallet = `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
+  const sharingLink = generateFundraiserLink(walletAddress, goalAmount, fundraiserName, description);
+
+  const response = `🎉 *${fundraiserName}* Fundraiser Created!
+
+Your fundraiser is now live and ready to receive contributions!
+
+📋 *Fundraiser Details:*
+• Name: ${fundraiserName}
+• Goal: ${goalAmount} ETH
+• Wallet: ${shortWallet}
+• Network: Base Sepolia
+
+🔗 *Share Your Fundraiser:*
+${sharingLink}
+
+📱 *Features Available:*
+• One-click wallet connection for contributors
+• Mobile-friendly QR code scanning
+• Real-time contribution tracking
+• Base Sepolia explorer integration
+
+🚀 *Share this link with your community to start receiving contributions!*
+
+Want me to generate a QR code for a specific contribution amount? Just ask!`;
+
+  return response;
+};
