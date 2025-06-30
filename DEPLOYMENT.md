@@ -103,8 +103,8 @@ If needed, you can trigger manual deploys from the Render dashboard.
 
 ## Configuration Files
 
-### `vercel.json` (Root)
-- Tells Vercel to build only the frontend
+### `frontend/vercel.json` (Frontend Directory)
+- Configures Vercel deployment settings
 - Sets up proper routing for SPA
 - Includes security headers
 
