@@ -8,9 +8,9 @@ services:
     healthCheckPath: /health
     # Only deploy when backend files change (ignore frontend changes)
     ignoredPaths:
-      - "zeon frontend/**"
-      - "zeon frontend/*"
-      - "**/zeon frontend/**"
+      - "frontend/**"
+      - "frontend/*"
+      - "**/frontend/**"
     envVars:
       - key: NODE_VERSION
         value: 20

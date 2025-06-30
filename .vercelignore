@@ -15,7 +15,7 @@ package-lock.json
 
 # Environment files
 .env*
-!zeon frontend/.env*
+!frontend/.env*
 
 # Logs
 *.log

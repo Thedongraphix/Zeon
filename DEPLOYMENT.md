@@ -7,7 +7,7 @@ This guide explains how to deploy the Zeon project with frontend on Vercel and b
 ```
 Zeon Repository (GitHub)
 ├── Root Directory (Backend) → Deploys to Render
-├── zeon frontend/ (Frontend) → Deploys to Vercel
+├── frontend/ (Frontend) → Deploys to Vercel
 └── Deployment configs prevent conflicts
 ```
 
@@ -23,7 +23,7 @@ Zeon Repository (GitHub)
 
 ```
 Framework Preset: Create React App
-Root Directory: zeon frontend
+Root Directory: frontend
 Build Command: npm run build
 Output Directory: build
 Install Command: npm install
@@ -64,8 +64,8 @@ If needed, you can trigger manual deploys from the Render dashboard.
 
 1. **Frontend Changes Only:**
    ```bash
-   # Make changes to zeon frontend/ directory
-   git add "zeon frontend/"
+   # Make changes to frontend/ directory
+   git add "frontend/"
    git commit -m "feat: update frontend UI"
    git push origin main
    # → Only Vercel deploys, Render ignores
@@ -92,7 +92,7 @@ If needed, you can trigger manual deploys from the Render dashboard.
 ## Deployment Triggers
 
 ### Vercel Triggers:
-- ✅ Changes in `zeon frontend/` directory
+- ✅ Changes in `frontend/` directory
 - ❌ Changes in root directory (backend files)
 - ❌ Changes to `render.yaml`, `index.ts`, etc.
 
@@ -142,7 +142,7 @@ If needed, you can trigger manual deploys from the Render dashboard.
    - Verify `ignoredPaths` in `render.yaml`
 
 2. **Vercel fails to find frontend:**
-   - Ensure `Root Directory` is set to `zeon frontend` in Vercel dashboard
+   - Ensure `Root Directory` is set to `frontend` in Vercel dashboard
    - Check that `vercel.json` has correct paths
 
 3. **Render fails backend build:**
