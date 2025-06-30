@@ -7,7 +7,7 @@ types/
 scripts/
 .data/
 render.yaml
-tsconfig.json
+/tsconfig.json
 
 # Node modules in root (backend only)
 /node_modules
