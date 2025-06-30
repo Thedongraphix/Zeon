@@ -31,7 +31,11 @@ XMTP_ENV=dev
 
 # Coinbase Developer Platform
 CDP_API_KEY_NAME=your_cdp_api_key_name
-CDP_API_KEY_PRIVATE_KEY=your_cdp_private_key
+
+# IMPORTANT: This must be the base64 private key string from the JSON file
+# provided by Coinbase. Wrap it in double quotes to ensure it's read correctly.
+CDP_API_KEY_PRIVATE_KEY="wQ7hNLqG0S5nK2QfR3vANugpzSLlT7Q6wWLvaC+sbvfgtk+T7wSv59Bwx0SagPAhBnpp8e2/xr39YRPT3ednUw=="
+
 NETWORK_ID=base-sepolia
 
 # OpenRouter API

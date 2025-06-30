@@ -12,8 +12,8 @@
     "gen:keys": "tsx ../../scripts/generateKeys.ts"
   },
   "dependencies": {
-    "@coinbase/agentkit": "^0.1.0",
-    "@coinbase/agentkit-langchain": "^0.1.0",
+    "@coinbase/agentkit": "^0.8.2",
+    "@coinbase/agentkit-langchain": "^0.3.0",
     "@langchain/core": "^0.3.19",
     "@langchain/langgraph": "^0.2.21",
     "@langchain/openai": "^0.3.14",
