@@ -125,6 +125,26 @@ function getWalletData(userId: string): string | null {
 }
 
 /**
+ * Clear XMTP installation data to avoid installation limit
+ */
+function clearXmtpInstallations() {
+  try {
+    if (fs.existsSync(XMTP_STORAGE_DIR)) {
+      const files = fs.readdirSync(XMTP_STORAGE_DIR);
+      for (const file of files) {
+        if (file.endsWith('.db3')) {
+          const filePath = `${XMTP_STORAGE_DIR}/${file}`;
+          fs.unlinkSync(filePath);
+          console.log(`🗑️  Cleared XMTP database: ${file}`);
+        }
+      }
+    }
+  } catch (error) {
+    console.warn("Could not clear XMTP installations:", error);
+  }
+}
+
+/**
  * Initialize the XMTP client.
  *
  * @returns An initialized XMTP Client instance
@@ -136,18 +156,40 @@ async function initializeXmtpClient() {
   const identifier = await signer.getIdentifier();
   const address = identifier.identifier;
 
-  const client = await Client.create(signer, {
-    dbEncryptionKey,
-    env: XMTP_ENV as XmtpEnv,
-    dbPath: XMTP_STORAGE_DIR + `/${XMTP_ENV}-${address}`,
-  });
+  try {
+    const client = await Client.create(signer, {
+      dbEncryptionKey,
+      env: XMTP_ENV as XmtpEnv,
+      dbPath: XMTP_STORAGE_DIR + `/${XMTP_ENV}-${address}`,
+    });
 
-  void logAgentDetails(client);
+    void logAgentDetails(client);
 
-  console.log("✓ Syncing conversations...");
-  await client.conversations.sync();
+    console.log("✓ Syncing conversations...");
+    await client.conversations.sync();
 
-  return client;
+    return client;
+  } catch (error: any) {
+    if (error.message?.includes("already registered 5/5 installations")) {
+      console.log("🔄 XMTP installation limit reached, clearing data and retrying...");
+      clearXmtpInstallations();
+      
+      // Retry after clearing
+      const client = await Client.create(signer, {
+        dbEncryptionKey,
+        env: XMTP_ENV as XmtpEnv,
+        dbPath: XMTP_STORAGE_DIR + `/${XMTP_ENV}-${address}`,
+      });
+
+      void logAgentDetails(client);
+
+      console.log("✓ Syncing conversations...");
+      await client.conversations.sync();
+
+      return client;
+    }
+    throw error;
+  }
 }
 
 /**
@@ -237,12 +279,12 @@ async function initializeAgent(
         walletActionProvider(),
         erc20ActionProvider(),
         cdpApiActionProvider({
-          apiKeyId: CDP_API_KEY_NAME,
-          apiKeySecret: CDP_API_KEY_PRIVATE_KEY.replace(/\\n/g, "\n"),
+          apiKeyName: CDP_API_KEY_NAME,
+          apiKeyPrivateKey: CDP_API_KEY_PRIVATE_KEY.replace(/\\n/g, "\n"),
         }),
         cdpWalletActionProvider({
-          apiKeyId: CDP_API_KEY_NAME,
-          apiKeySecret: CDP_API_KEY_PRIVATE_KEY.replace(/\\n/g, "\n"),
+          apiKeyName: CDP_API_KEY_NAME,
+          apiKeyPrivateKey: CDP_API_KEY_PRIVATE_KEY.replace(/\\n/g, "\n"),
         }),
       ],
     });
