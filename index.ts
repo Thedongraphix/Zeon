@@ -44,20 +44,20 @@ function validateEnvironment(requiredVars: string[]) {
 }
 
 const {
-  CDP_API_KEY_ID,
-  CDP_API_KEY_SECRET,
+  CDP_API_KEY_NAME,
+  CDP_API_KEY_PRIVATE_KEY,
   NETWORK_ID,
   OPENROUTER_API_KEY,
 } = validateEnvironment([
-  "CDP_API_KEY_ID",
-  "CDP_API_KEY_SECRET",
+  "CDP_API_KEY_NAME",
+  "CDP_API_KEY_PRIVATE_KEY",
   "NETWORK_ID",
   "OPENROUTER_API_KEY",
 ]);
 
 console.log("✅ Environment variables validated:", {
-  CDP_API_KEY_ID: CDP_API_KEY_ID || 'MISSING',
-  CDP_API_KEY_SECRET: CDP_API_KEY_SECRET ? 'SET' : 'MISSING',
+  CDP_API_KEY_NAME: CDP_API_KEY_NAME || 'MISSING',
+  CDP_API_KEY_PRIVATE_KEY: CDP_API_KEY_PRIVATE_KEY ? 'SET' : 'MISSING',
   NETWORK_ID: NETWORK_ID || 'base-sepolia',
   OPENROUTER_API_KEY: OPENROUTER_API_KEY ? `${OPENROUTER_API_KEY.substring(0, 10)}...` : 'MISSING'
 });
@@ -149,8 +149,8 @@ async function initializeAgent(
   const walletData = getWalletData(userId);
   
   const provider = await CdpWalletProvider.configureWithWallet({
-    apiKeyId: CDP_API_KEY_ID,
-    apiKeySecret: CDP_API_KEY_SECRET,
+    apiKeyId: CDP_API_KEY_NAME,
+    apiKeySecret: CDP_API_KEY_PRIVATE_KEY,
     networkId: NETWORK_ID,
     cdpWalletData: walletData || undefined,
   });
@@ -172,12 +172,12 @@ async function initializeAgent(
     walletProvider: provider,
     actionProviders: [
       cdpApiActionProvider({
-        apiKeyId: CDP_API_KEY_ID,
-        apiKeySecret: CDP_API_KEY_SECRET,
+        apiKeyId: CDP_API_KEY_NAME,
+        apiKeySecret: CDP_API_KEY_PRIVATE_KEY,
       }),
       cdpWalletActionProvider({
-        apiKeyId: CDP_API_KEY_ID,
-        apiKeySecret: CDP_API_KEY_SECRET,
+        apiKeyId: CDP_API_KEY_NAME,
+        apiKeySecret: CDP_API_KEY_PRIVATE_KEY,
       }),
       erc20ActionProvider(),
       walletActionProvider(),

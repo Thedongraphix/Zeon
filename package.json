@@ -7,9 +7,10 @@
   "scripts": {
     "compile-contract": "tsx compile-contract.ts",
     "build": "npm run compile-contract && tsc",
-    "start": "node dist/index.js",
+    "start": "node -r dotenv/config dist/index.js dotenv_config_path=.env.local",
     "dev": "tsx --watch index.ts",
-    "gen:keys": "tsx ../../scripts/generateKeys.ts"
+    "gen:keys": "tsx ../../scripts/generateKeys.ts",
+    "test": "jest"
   },
   "dependencies": {
     "@coinbase/agentkit": "^0.8.2",
