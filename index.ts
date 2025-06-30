@@ -5,6 +5,7 @@ import {
   cdpWalletActionProvider,
   CdpWalletProvider,
   erc20ActionProvider,
+  erc721ActionProvider,
   walletActionProvider,
 } from "@coinbase/agentkit";
 import { getLangChainTools } from "@coinbase/agentkit-langchain";
@@ -162,6 +163,7 @@ async function initializeAgent(
         apiKeySecret: CDP_API_KEY_PRIVATE_KEY,
       }),
       erc20ActionProvider(),
+      erc721ActionProvider(),
       walletActionProvider(),
     ],
   });
@@ -183,7 +185,7 @@ async function initializeAgent(
 
 Your capabilities include:
 - Creating and managing cryptocurrency wallets
-- Helping with token transfers and transactions
+- Helping with token and NFT transfers and transactions
 - Generating QR codes for easy payments
 - Providing guidance on fundraising strategies
 - Explaining blockchain and cryptocurrency concepts

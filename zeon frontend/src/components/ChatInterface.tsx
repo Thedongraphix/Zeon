@@ -255,6 +255,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
     }
   };
 
+  // NEW: Helper function to parse text with asterisks for bolding
+  const renderFormattedText = (text: string) => {
+    const parts = text.split(/(\*.*?\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('*') && part.endsWith('*')) {
+        return <strong key={i}>{part.slice(1, -1)}</strong>;
+      }
+      return part;
+    });
+  };
+
   // Enhanced function to render message content with proper QR code and link handling
   const renderMessageContent = (content: string) => {
     // First, try to extract QR data using the guide's method
@@ -273,7 +284,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
         <div className="message-content">
           {/* Message text */}
           <div className="mb-4 whitespace-pre-wrap break-words overflow-wrap-anywhere">
-            {qrData.message}
+            {renderTextWithLinks(qrData.message, txHashes, walletAddress)}
           </div>
           
           {/* QR Code Display - Following the guide exactly */}
@@ -489,8 +500,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
               );
             }
             
-            // Regular text
-            return <span key={index}>{part}</span>;
+            // Regular text - now with bold formatting
+            return <span key={index}>{renderFormattedText(part)}</span>;
           })}
         </div>
         

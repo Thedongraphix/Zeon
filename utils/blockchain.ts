@@ -138,24 +138,23 @@ export const formatTransactionResponse = (
 ): string => {
   if (!isValidTxHash(txHash)) {
     return `❌ Invalid Transaction Hash
-The transaction hash \`${txHash}\` appears to be invalid.`;
+The transaction hash '${txHash}' appears to be invalid.`;
   }
 
   const scanLink = generateBaseScanLink(txHash, 'tx');
-  const shortHash = `${txHash.slice(0, 6)}...${txHash.slice(-4)}`;
   
-  let response = `✅ ${action} Successful!
+  let response = `✅ *${action} Successful!*
 
-🔗 Transaction Hash: \`${txHash}\`
-   [View on Base Sepolia Scan](${scanLink})`;
+🔗 *Transaction Hash:* ${txHash}
+   View on Base Sepolia Scan: ${scanLink}`;
 
   if (details) {
-    response += `\n\n📋 Transaction Details:`;
+    response += `\n\n📋 *Transaction Details:*`;
     if (details.blockNumber) response += `\n- Block Number: ${details.blockNumber}`;
     if (details.gasUsed) response += `\n- Gas Used: ${details.gasUsed}`;
     if (details.gasPrice) response += `\n- Gas Price: ${details.gasPrice} gwei`;
-    if (details.from) response += `\n- From: \`${details.from}\``;
-    if (details.to) response += `\n- To: \`${details.to}\``;
+    if (details.from) response += `\n- From: ${details.from}`;
+    if (details.to) response += `\n- To: ${details.to}`;
     if (details.value) response += `\n- Value: ${details.value} ETH`;
   }
 
@@ -180,30 +179,30 @@ export const formatDeployResponse = (
   console.log("📋 QR Response data:", qrCodeResponse);
 
   // Create the main response text
-  const mainResponse = `🎉 **${fundraiserName}** is Live!
+  const mainResponse = `🎉 *${fundraiserName}* is Live!
 
 Your fundraiser has been successfully deployed on Base Sepolia!
 
-📋 **Deployment Progress:** 
+📋 *Deployment Progress:* 
 ✅ Step 1/5: Parameters prepared
 ✅ Step 2/5: Validation completed  
 ✅ Step 3/5: Gas optimized for speed
 ✅ Step 4/5: Transaction submitted
 ✅ Step 5/5: Blockchain confirmation received
 
-📋 **Details:**
+📋 *Details:*
 • Goal: ${goalAmount} ETH
-• Contract: [${shortContract}](${contractUrl})
-• Transaction: [${shortTx}](${txUrl})
+• Contract: ${shortContract} (view at ${contractUrl})
+• Transaction: ${shortTx} (view at ${txUrl})
 
-**🚀 Your fundraiser is now ready to receive contributions!**
+🚀 *Your fundraiser is now ready to receive contributions!*
 
-**Share these details:**
-- Contract Address: \`${contractAddress}\`
+*Share these details:*
+- Contract Address: ${contractAddress}
 - Goal Amount: ${goalAmount} ETH
 - Network: Base Sepolia
 
-**Need help?** Ask me to generate additional QR codes for different contribution amounts!`;
+*Need help?* Ask me to generate additional QR codes for different contribution amounts!`;
 
   // Handle QR code response - if it's an object with QR data, append it as JSON
   if (typeof qrCodeResponse === 'object' && qrCodeResponse.qrCode && qrCodeResponse.message) {

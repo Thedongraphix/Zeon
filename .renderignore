@@ -1,0 +1,15 @@
+# Ignore frontend directory
+zeon frontend/
+
+# Ignore Vercel configuration
+vercel.json
+.vercel/
+.vercelignore
+
+# Development files
+*.md
+!README.md
+
+# Frontend specific files
+tailwind.config.js
+postcss.config.js 

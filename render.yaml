@@ -6,6 +6,11 @@ services:
     buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /health
+    # Only deploy when backend files change (ignore frontend changes)
+    ignoredPaths:
+      - "zeon frontend/**"
+      - "zeon frontend/*"
+      - "**/zeon frontend/**"
     envVars:
       - key: NODE_VERSION
         value: 20
