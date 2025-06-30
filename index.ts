@@ -120,7 +120,7 @@ async function initializeAgent(
 
   // Initialize the LLM
   const llm = new ChatOpenAI({
-    model: "meta-llama/llama-3.1-8b-instruct:free",
+    model: "gpt-4o-mini",
     apiKey: OPENROUTER_API_KEY,
     configuration: {
       baseURL: "https://openrouter.ai/api/v1",
