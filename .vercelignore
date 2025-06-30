@@ -9,13 +9,15 @@ scripts/
 render.yaml
 tsconfig.json
 
-# Node modules in root (backend)
+# Node modules in root (backend only)
 /node_modules
-package-lock.json
+/package-lock.json
 
-# Environment files
-.env*
-!frontend/.env*
+# Root vercel.json (keep frontend/vercel.json)
+/vercel.json
+
+# Environment files (root only)
+/.env*
 
 # Logs
 *.log

@@ -1,9 +1,6 @@
 {
   "version": 2,
   "name": "zeon-frontend",
-  "buildCommand": "cd frontend && npm run build",
-  "outputDirectory": "frontend/build",
-  "installCommand": "cd frontend && npm install",
   "framework": "create-react-app",
   "regions": ["iad1"],
   "env": {
@@ -12,11 +9,6 @@
   "build": {
     "env": {
       "NODE_VERSION": "20"
-    }
-  },
-  "functions": {
-    "frontend/src/**": {
-      "includeFiles": "frontend/**"
     }
   },
   "rewrites": [
@@ -43,6 +35,5 @@
         }
       ]
     }
-  ],
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ./frontend/"
+  ]
 } 
