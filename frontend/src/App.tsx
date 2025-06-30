@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useParams, useSearchParams } from 'react-router-dom';
 import { PrivyProvider, usePrivy } from '@privy-io/react-auth';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { baseSepolia, sepolia } from 'viem/chains';
@@ -6,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Header from './components/Header';
 import LandingPage from './components/LandingPage';
 import ChatInterface from './components/ChatInterface';
+import FundraiserPage from './components/FundraiserPage';
 import './index.css';
 
 const config = createConfig({
@@ -18,7 +20,32 @@ const config = createConfig({
 
 const queryClient = new QueryClient();
 
-function AppContent() {
+function FundraiserRoute() {
+  const { walletAddress } = useParams<{ walletAddress: string }>();
+  const [searchParams] = useSearchParams();
+  
+  const goalAmount = searchParams.get('goal') || '1';
+  const fundraiserName = searchParams.get('name') || 'Fundraiser';
+  const description = searchParams.get('description') || '';
+  const currentAmount = searchParams.get('current') || '0';
+  
+  if (!walletAddress) {
+    return <div className="text-white p-8">Invalid fundraiser link</div>;
+  }
+  
+  return (
+    <FundraiserPage
+      walletAddress={walletAddress}
+      goalAmount={goalAmount}
+      fundraiserName={decodeURIComponent(fundraiserName)}
+      description={description ? decodeURIComponent(description) : undefined}
+      currentAmount={currentAmount}
+      contributors={[]} // This would be fetched from an API in a real implementation
+    />
+  );
+}
+
+function MainApp() {
   const { authenticated } = usePrivy();
   const [showChat, setShowChat] = useState(false);
 
@@ -51,6 +78,17 @@ function AppContent() {
         )}
       </div>
     </div>
+  );
+}
+
+function AppContent() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<MainApp />} />
+        <Route path="/fundraiser/:walletAddress" element={<FundraiserRoute />} />
+      </Routes>
+    </Router>
   );
 }
 
