@@ -47,6 +47,15 @@ const {
   "OPENROUTER_API_KEY",
 ]);
 
+// Add deployment ID to wallet key to create unique installations per deployment
+const DEPLOYMENT_ID = process.env.RENDER_SERVICE_ID || process.env.DEPLOYMENT_ID || 'local';
+const UNIQUE_WALLET_KEY = `${WALLET_KEY}-${DEPLOYMENT_ID}`;
+
+console.log("🔧 Using deployment-specific wallet configuration:", {
+  deploymentId: DEPLOYMENT_ID.substring(0, 8) + '...',
+  uniqueWalletKeyLength: UNIQUE_WALLET_KEY.length
+});
+
 console.log("✅ Environment variables validated:", {
   WALLET_KEY: WALLET_KEY ? `${WALLET_KEY.substring(0, 10)}...` : 'MISSING',
   ENCRYPTION_KEY: ENCRYPTION_KEY ? `${ENCRYPTION_KEY.substring(0, 10)}...` : 'MISSING',
@@ -77,7 +86,7 @@ type Agent = ReturnType<typeof createReactAgent>;
 let agent: Awaited<ReturnType<typeof startAgent>> | null = null;
 
 /**
- * Ensure local storage directory exists
+ * Ensure local storage directory exists and cleanup old XMTP files
  */
 function ensureLocalStorage() {
   if (!fs.existsSync(XMTP_STORAGE_DIR)) {
@@ -85,6 +94,26 @@ function ensureLocalStorage() {
   }
   if (!fs.existsSync(WALLET_STORAGE_DIR)) {
     fs.mkdirSync(WALLET_STORAGE_DIR, { recursive: true });
+  }
+  
+  // Clean up old XMTP database files (older than 1 hour)
+  try {
+    const files = fs.readdirSync(XMTP_STORAGE_DIR);
+    const oneHourAgo = Date.now() - (60 * 60 * 1000);
+    
+    for (const file of files) {
+      if (file.endsWith('.db3')) {
+        const filePath = `${XMTP_STORAGE_DIR}/${file}`;
+        const stats = fs.statSync(filePath);
+        
+        if (stats.mtime.getTime() < oneHourAgo) {
+          fs.unlinkSync(filePath);
+          console.log(`🧹 Cleaned up old XMTP database: ${file}`);
+        }
+      }
+    }
+  } catch (error) {
+    console.warn("Could not clean up old XMTP files:", error);
   }
 }
 
@@ -127,20 +156,32 @@ function getWalletData(userId: string): string | null {
 /**
  * Clear XMTP installation data to avoid installation limit
  */
-function clearXmtpInstallations() {
+async function clearXmtpInstallations(signer: any, dbEncryptionKey: Uint8Array, address: string) {
   try {
+    console.log("🗑️  Clearing XMTP installations for address:", address);
+    
+    // Clear the entire XMTP data directory
     if (fs.existsSync(XMTP_STORAGE_DIR)) {
-      const files = fs.readdirSync(XMTP_STORAGE_DIR);
-      for (const file of files) {
-        if (file.endsWith('.db3')) {
-          const filePath = `${XMTP_STORAGE_DIR}/${file}`;
-          fs.unlinkSync(filePath);
-          console.log(`🗑️  Cleared XMTP database: ${file}`);
-        }
-      }
+      fs.rmSync(XMTP_STORAGE_DIR, { recursive: true, force: true });
+      console.log("🗑️  Removed entire XMTP data directory");
     }
+    
+    // Recreate the directory
+    if (!fs.existsSync(XMTP_STORAGE_DIR)) {
+      fs.mkdirSync(XMTP_STORAGE_DIR, { recursive: true });
+      console.log("📁 Recreated XMTP data directory");
+    }
+    
+    // Use a different database path with timestamp to ensure uniqueness
+    const timestamp = Date.now();
+    const uniqueDbPath = `${XMTP_STORAGE_DIR}/${XMTP_ENV}-${address}-${timestamp}`;
+    
+    return uniqueDbPath;
   } catch (error) {
     console.warn("Could not clear XMTP installations:", error);
+    // Fallback to timestamp-based unique path
+    const timestamp = Date.now();
+    return `${XMTP_STORAGE_DIR}/${XMTP_ENV}-${address}-${timestamp}`;
   }
 }
 
@@ -150,17 +191,21 @@ function clearXmtpInstallations() {
  * @returns An initialized XMTP Client instance
  */
 async function initializeXmtpClient() {
-  const signer = createSigner(WALLET_KEY);
+  const signer = createSigner(UNIQUE_WALLET_KEY);
   const dbEncryptionKey = getEncryptionKeyFromHex(ENCRYPTION_KEY);
 
   const identifier = await signer.getIdentifier();
   const address = identifier.identifier;
 
+  // Always use a unique database path to avoid installation conflicts
+  const timestamp = Date.now();
+  const uniqueDbPath = `${XMTP_STORAGE_DIR}/${XMTP_ENV}-${address}-${timestamp}`;
+
   try {
     const client = await Client.create(signer, {
       dbEncryptionKey,
       env: XMTP_ENV as XmtpEnv,
-      dbPath: XMTP_STORAGE_DIR + `/${XMTP_ENV}-${address}`,
+      dbPath: uniqueDbPath,
     });
 
     void logAgentDetails(client);
@@ -172,13 +217,15 @@ async function initializeXmtpClient() {
   } catch (error: any) {
     if (error.message?.includes("already registered 5/5 installations")) {
       console.log("🔄 XMTP installation limit reached, clearing data and retrying...");
-      clearXmtpInstallations();
       
-      // Retry after clearing
+      // Clear installations and get a new unique path
+      const newDbPath = await clearXmtpInstallations(signer, dbEncryptionKey, address);
+      
+      // Retry after clearing with new path
       const client = await Client.create(signer, {
         dbEncryptionKey,
         env: XMTP_ENV as XmtpEnv,
-        dbPath: XMTP_STORAGE_DIR + `/${XMTP_ENV}-${address}`,
+        dbPath: newDbPath,
       });
 
       void logAgentDetails(client);
