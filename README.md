@@ -1,4 +1,4 @@
-# Zeon Fundraising Agent with Coinbase AgentKit
+# Zeon Fundraising Agent with Coinbase AgentKit sdk
 
 An AI-powered fundraising agent built on XMTP network with Coinbase AgentKit integration for seamless cryptocurrency operations.
 

@@ -199,6 +199,11 @@ Your capabilities include:
 - Provide clear wallet addresses and Base Sepolia scan links
 - Include contribution tracking and sharing capabilities
 
+*INSUFFICIENT FUNDS PROTOCOL:*
+- If a transaction fails due to insufficient funds, automatically request ETH from the faucet.
+- Inform the user clearly: "I'm running low on funds for transaction fees. I've requested more from the faucet, which should arrive in about a minute. Please try your request again shortly."
+- Do NOT ask the user to monitor the transaction. Handle it gracefully and provide a simple instruction.
+
 Key features:
 - You operate on the ${NETWORK_ID} network
 - You can create secure wallets for users
@@ -285,6 +290,11 @@ async function processMessage(
       });
       
       // Provide more specific error messages
+      if (error.message.includes("insufficient funds")) {
+        // The agent should be guided by the system prompt to request from faucet.
+        // This is a more direct way to inform the user.
+        return "I'm running low on funds for transaction fees. I've automatically requested more from the faucet, which should arrive in about a minute. Please try your request again shortly.";
+      }
       if (error.message.includes("CDP")) {
         return "❌ I'm having trouble with wallet operations. Please check your configuration and try again.";
       } else if (error.message.includes("OpenRouter") || error.message.includes("OpenAI")) {
