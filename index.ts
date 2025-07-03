@@ -27,6 +27,8 @@ console.log("🔧 Validating environment variables...");
 import { validateEnvironment } from "./helpers/client.js";
 // Import blockchain utilities
 import { generateFundraiserLink, formatFundraiserResponse } from "./utils/blockchain.js";
+// Import balance management
+import { BalanceManager } from "./utils/balance-manager.js";
 
 const {
   CDP_API_KEY_NAME,
@@ -64,6 +66,7 @@ type Agent = ReturnType<typeof createReactAgent>;
 // Agent will be initialized once and reused
 let globalAgent: Agent | null = null;
 let globalConfig: AgentConfig | null = null;
+let globalBalanceManager: BalanceManager | null = null;
 
 /**
  * Ensure local storage directory exists
@@ -152,6 +155,25 @@ async function initializeAgent(
   const walletAddress = await provider.getAddress();
   console.log(`💼 Wallet initialized for user ${userId}: ${walletAddress}`);
 
+  // Initialize balance manager if not already created
+  if (!globalBalanceManager) {
+    console.log(`💰 Initializing balance manager...`);
+    globalBalanceManager = new BalanceManager(provider, {
+      minimumBalance: "0.002", // Slightly higher minimum for faster operations
+      targetBalance: "0.01",   // Higher target balance
+      recheckIntervalMs: 45000 // Check every 45 seconds
+    });
+    
+    // Start background monitoring
+    globalBalanceManager.startMonitoring();
+    
+    // Check initial balance and request faucet if needed
+    const balanceCheck = await globalBalanceManager.ensureSufficientBalance();
+    if (!balanceCheck.ready && balanceCheck.message) {
+      console.log(`⚠️ ${balanceCheck.message}`);
+    }
+  }
+
   // Get the AgentKit tools
   const agentKit = await AgentKit.from({
     walletProvider: provider,
@@ -199,10 +221,12 @@ Your capabilities include:
 - Provide clear wallet addresses and Base Sepolia scan links
 - Include contribution tracking and sharing capabilities
 
-*INSUFFICIENT FUNDS PROTOCOL:*
-- If a transaction fails due to insufficient funds, automatically request ETH from the faucet.
-- Inform the user clearly: "I'm running low on funds for transaction fees. I've requested more from the faucet, which should arrive in about a minute. Please try your request again shortly."
-- Do NOT ask the user to monitor the transaction. Handle it gracefully and provide a simple instruction.
+*FUND MANAGEMENT PROTOCOL:*
+- I maintain a minimum balance of 0.002 ETH for fast operations
+- Balance is automatically monitored and topped up from faucet as needed
+- If funds are temporarily low, I'll inform users with specific timing expectations
+- For urgent needs, users can send ETH directly to my wallet address
+- I proactively prevent fund-related delays through smart balance management
 
 Key features:
 - You operate on the ${NETWORK_ID} network
@@ -245,6 +269,20 @@ Remember to always verify addresses and amounts before executing transactions.`;
 }
 
 /**
+ * Check if a message likely involves a transaction that requires ETH
+ */
+function isTransactionMessage(message: string): boolean {
+  const transactionKeywords = [
+    'fundraiser', 'create', 'deploy', 'transfer', 'send', 'mint', 
+    'token', 'nft', 'swap', 'trade', 'contract', 'transaction',
+    'faucet', 'withdraw', 'deposit', 'stake', 'unstake'
+  ];
+  
+  const lowerMessage = message.toLowerCase();
+  return transactionKeywords.some(keyword => lowerMessage.includes(keyword));
+}
+
+/**
  * Process a message using the agent.
  *
  * @param agent - The initialized agent
@@ -259,6 +297,16 @@ async function processMessage(
 ): Promise<string> {
   try {
     console.log(`🔄 Processing message: "${message}"`);
+    
+    // Proactive balance check for transaction-related requests
+    if (globalBalanceManager && isTransactionMessage(message)) {
+      console.log(`💰 Checking balance before transaction operation...`);
+      const balanceCheck = await globalBalanceManager.ensureSufficientBalance();
+      if (!balanceCheck.ready) {
+        console.log(`⚠️ Insufficient balance for transaction: ${balanceCheck.message}`);
+        return balanceCheck.message || "I need to request more funds before proceeding. Please try again in a moment.";
+      }
+    }
     
     const response = await agent.invoke(
       { messages: [new HumanMessage(message)] },
@@ -289,11 +337,22 @@ async function processMessage(
         stack: error.stack?.split('\n').slice(0, 3).join('\n')
       });
       
-      // Provide more specific error messages
+      // Enhanced error handling with automatic retry logic
       if (error.message.includes("insufficient funds")) {
-        // The agent should be guided by the system prompt to request from faucet.
-        // This is a more direct way to inform the user.
-        return "I'm running low on funds for transaction fees. I've automatically requested more from the faucet, which should arrive in about a minute. Please try your request again shortly.";
+        console.log("💰 Insufficient funds detected, attempting automatic resolution...");
+        
+        if (globalBalanceManager) {
+          const balanceCheck = await globalBalanceManager.ensureSufficientBalance();
+          if (balanceCheck.ready) {
+            // Funds are now available, suggest immediate retry
+            return "I've resolved the funding issue. Please try your request again now - I should have sufficient funds.";
+          } else {
+            // Still need to wait for funds
+            return balanceCheck.message || "I'm working on getting more funds. Please try again in about a minute.";
+          }
+        } else {
+          return "I'm running low on funds for transaction fees. I've automatically requested more from the faucet, which should arrive in about a minute. Please try your request again shortly.";
+        }
       }
       if (error.message.includes("CDP")) {
         return "❌ I'm having trouble with wallet operations. Please check your configuration and try again.";
@@ -398,6 +457,17 @@ async function startAgent() {
     console.log(`⛓️  Network: ${NETWORK_ID}`);
     console.log(`🤖 AgentKit: Initialized with ${globalAgent ? 'success' : 'error'}`);
     
+    // Ensure we have sufficient funds for immediate operations
+    if (globalBalanceManager) {
+      console.log("💰 Performing startup fund check...");
+      const startupBalanceCheck = await globalBalanceManager.ensureSufficientBalance();
+      if (startupBalanceCheck.ready) {
+        console.log("✅ Sufficient funds available for immediate operations");
+      } else {
+        console.log(`⚠️ Startup fund status: ${startupBalanceCheck.message}`);
+      }
+    }
+    
     // Return the handler for the API server
     return {
       handleMessage,
@@ -442,13 +512,29 @@ async function main() {
   // Agent will be initialized in the background after the server starts
   let agent: Awaited<ReturnType<typeof startAgent>> | null = null;
 
-  // Health check endpoint
-  app.get('/health', (_req, res) => {
-      res.status(200).json({ 
+  // Health check endpoint with balance status
+  app.get('/health', async (_req, res) => {
+    let balanceInfo = { balance: 'unknown', status: 'unknown' };
+    
+    if (globalBalanceManager) {
+      try {
+        const balance = await globalBalanceManager.getCurrentBalance();
+        const isBalanceSufficient = await globalBalanceManager.isBalanceSufficient();
+        balanceInfo = {
+          balance: `${balance} ETH`,
+          status: isBalanceSufficient ? 'sufficient' : 'low'
+        };
+      } catch (error) {
+        balanceInfo.status = 'error';
+      }
+    }
+    
+    res.status(200).json({ 
       status: 'ok', 
       timestamp: new Date().toISOString(),
       agent: agent ? 'ready' : 'initializing',
-      network: NETWORK_ID
+      network: NETWORK_ID,
+      balance: balanceInfo
     });
   });
 
@@ -500,13 +586,26 @@ async function main() {
       console.log(`⚡ Processing time: ${processingTime}ms`);
       console.log(`✅ Response generated: ${response.substring(0, 100)}${response.length > 100 ? '...' : ''}`);
       
+      // Get current balance status for metadata
+      let balanceStatus = { ready: true, balance: 'unknown' };
+      if (globalBalanceManager) {
+        try {
+          const balance = await globalBalanceManager.getCurrentBalance();
+          const isReady = await globalBalanceManager.isBalanceSufficient();
+          balanceStatus = { ready: isReady, balance: `${balance} ETH` };
+        } catch (error) {
+          console.warn("Could not get balance status for response metadata");
+        }
+      }
+      
       res.send({ 
         response,
         metadata: {
           processingTime,
           sessionId,
           timestamp: new Date().toISOString(),
-          network: NETWORK_ID
+          network: NETWORK_ID,
+          balance: balanceStatus
         }
       });
     } catch (error) {
