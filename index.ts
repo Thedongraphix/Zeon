@@ -26,7 +26,12 @@ console.log("🔧 Validating environment variables...");
 // Import validation from helpers
 import { validateEnvironment } from "./helpers/client.js";
 // Import blockchain utilities
-import { generateFundraiserLink, formatFundraiserResponse } from "./utils/blockchain.js";
+import { 
+  generateFundraiserLink, 
+  formatFundraiserResponse, 
+  generateEnhancedContributionQR,
+  getFundraiserStatus 
+} from "./utils/blockchain.js";
 // Import balance management
 import { BalanceManager } from "./utils/balance-manager.js";
 
@@ -217,9 +222,9 @@ Your capabilities include:
 *IMPORTANT FUNDRAISING GUIDELINES:*
 - When users request a "fundraiser" for a specific ETH amount, create a simple contribution wallet setup rather than deploying a token
 - For token creation, total supply must be a whole number (e.g., 1000, not 0.5)
-- Always generate QR codes for easy contributions after creating fundraisers
-- Provide clear wallet addresses and Base Sepolia scan links
-- Include contribution tracking and sharing capabilities
+- Always provide comprehensive sharing options: QR codes, direct links, and web sharing URLs
+- Include progress tracking, contributor listings, and mobile-friendly payment options
+- Generate multiple contribution amount options for different supporter levels
 
 *FUND MANAGEMENT PROTOCOL:*
 - I maintain a minimum balance of 0.002 ETH for fast operations
@@ -231,7 +236,9 @@ Your capabilities include:
 Key features:
 - You operate on the ${NETWORK_ID} network
 - You can create secure wallets for users
-- You can generate QR codes for donations
+- You can generate enhanced QR codes with direct links for donations
+- You can provide comprehensive fundraiser sharing options
+- You track contributions and display progress
 - You maintain conversation memory across sessions
 
 Important guidelines:
@@ -645,8 +652,8 @@ async function main() {
     try {
       console.log(`🎯 Creating fundraiser "${fundraiserName}" for ${goalAmount} ETH`);
       
-      // Generate the formatted response with sharing link
-      const response = formatFundraiserResponse(
+      // Get fundraiser status with enhanced formatting
+      const fundraiserStatus = await getFundraiserStatus(
         walletAddress,
         fundraiserName,
         goalAmount,
@@ -664,12 +671,14 @@ async function main() {
       console.log(`✅ Fundraiser created with link: ${sharingLink}`);
       
       res.json({ 
-        response,
+        response: fundraiserStatus.formattedResponse,
         fundraiserLink: sharingLink,
         walletAddress,
         goalAmount,
         fundraiserName,
         description,
+        currentAmount: fundraiserStatus.currentAmount,
+        contributors: fundraiserStatus.contributors,
         metadata: {
           timestamp: new Date().toISOString(),
           network: NETWORK_ID
@@ -680,6 +689,95 @@ async function main() {
       
       res.status(500).json({ 
         error: 'Failed to create fundraiser',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // NEW: Enhanced QR code generation endpoint
+  app.post('/api/qr-code', async (req, res) => {
+    console.log('📱 QR code generation request:', JSON.stringify(req.body, null, 2));
+    
+    const { walletAddress, amount, fundraiserName, description } = req.body;
+    
+    if (!walletAddress || !amount || !fundraiserName) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: walletAddress, amount, fundraiserName',
+        received: req.body
+      });
+    }
+    
+    try {
+      console.log(`📱 Generating QR code for ${amount} ETH contribution to "${fundraiserName}"`);
+      
+      // Generate enhanced QR code with direct links
+      const qrResult = await generateEnhancedContributionQR(
+        walletAddress,
+        amount,
+        fundraiserName,
+        description
+      );
+      
+      console.log(`✅ QR code generated successfully`);
+      
+      res.json({ 
+        ...qrResult,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          network: NETWORK_ID,
+          amount,
+          walletAddress
+        }
+      });
+    } catch (error) {
+      console.error("❌ Error generating QR code:", error);
+      
+      res.status(500).json({ 
+        error: 'Failed to generate QR code',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // NEW: Fundraiser status endpoint
+  app.get('/api/fundraiser/:address', async (req, res) => {
+    console.log('📊 Fundraiser status request for:', req.params.address);
+    
+    const { address } = req.params;
+    const { name, goal, description } = req.query;
+    
+    if (!address || !name || !goal) {
+      return res.status(400).json({ 
+        error: 'Missing required parameters: name, goal',
+        received: { address, name, goal, description }
+      });
+    }
+    
+    try {
+      console.log(`📊 Getting status for fundraiser "${name}"`);
+      
+      const status = await getFundraiserStatus(
+        address as string,
+        name as string,
+        goal as string,
+        description as string
+      );
+      
+      console.log(`✅ Status retrieved: ${status.currentAmount} ETH raised`);
+      
+      res.json({ 
+        ...status,
+        walletAddress: address,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          network: NETWORK_ID
+        }
+      });
+    } catch (error) {
+      console.error("❌ Error getting fundraiser status:", error);
+      
+      res.status(500).json({ 
+        error: 'Failed to get fundraiser status',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
     }

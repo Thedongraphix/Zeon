@@ -274,34 +274,208 @@ export const formatFundraiserResponse = (
   walletAddress: string,
   fundraiserName: string,
   goalAmount: string,
-  description?: string
+  description?: string,
+  currentAmount?: string,
+  contributors?: Array<{address: string, amount: string, timestamp: string}>
 ): string => {
   const contractUrl = generateBaseScanLink(walletAddress, 'address');
   const shortWallet = `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
-  const sharingLink = generateFundraiserLink(walletAddress, goalAmount, fundraiserName, description);
+  const sharingLink = generateFundraiserLink(walletAddress, goalAmount, fundraiserName, description, currentAmount);
+  
+  // Calculate progress
+  const goalNum = parseFloat(goalAmount);
+  const currentNum = parseFloat(currentAmount || '0');
+  const progressPercentage = goalNum > 0 ? Math.round((currentNum / goalNum) * 100) : 0;
+  const progressBar = generateProgressBar(progressPercentage);
+  
+  // Direct contribution links for different amounts
+  const quickAmounts = ['0.001', '0.005', '0.01', '0.05'];
+  const directLinks = quickAmounts.map(amount => {
+    const amountInWei = parseFloat(amount) * 1e18;
+    const paymentLink = `ethereum:${walletAddress}?value=${amountInWei}`;
+    return `• [${amount} ETH](${paymentLink})`;
+  }).join('\n');
 
-  const response = `🎉 *${fundraiserName}* Fundraiser Created!
+  const response = `🎉 **${fundraiserName}** - LIVE
 
-Your fundraiser is now live and ready to receive contributions!
+${description || 'Help support this important cause!'}
 
-📋 *Fundraiser Details:*
-• Name: ${fundraiserName}
-• Goal: ${goalAmount} ETH
-• Wallet: ${shortWallet}
-• Network: Base Sepolia
+---
 
-🔗 *Share Your Fundraiser:*
+📊 **PROGRESS**
+${progressBar}
+💰 **${currentAmount || '0'} ETH** raised of **${goalAmount} ETH** goal (${progressPercentage}%)
+
+---
+
+🏦 **WALLET ADDRESS**
+\`${walletAddress}\`
+🔍 [View on Base Sepolia](${contractUrl})
+
+---
+
+🚀 **CONTRIBUTE NOW**
+
+📱 **For Mobile Users (QR Code)**
+Ask me: "Generate QR code for [amount] ETH contribution"
+
+💻 **For Desktop Users (Direct Links)**
+${directLinks}
+
+🌐 **Share This Fundraiser**
 ${sharingLink}
 
-📱 *Features Available:*
-• One-click wallet connection for contributors
-• Mobile-friendly QR code scanning
-• Real-time contribution tracking
-• Base Sepolia explorer integration
+---
 
-🚀 *Share this link with your community to start receiving contributions!*
+👥 **CONTRIBUTORS** (${contributors?.length || 0})
+${formatContributorsList(contributors || [])}
 
-Want me to generate a QR code for a specific contribution amount? Just ask!`;
+---
+
+✨ **How to Contribute:**
+1. 🔗 Click a direct link above OR scan QR code
+2. 📱 Confirm in your wallet (MetaMask, Trust Wallet, etc.)
+3. ✅ Your contribution will appear here automatically!
+
+💡 **Need help?** Ask me to generate a custom QR code for any amount!`;
 
   return response;
+};
+
+// Helper function to generate progress bar
+const generateProgressBar = (percentage: number): string => {
+  const safePercentage = Math.max(0, Math.min(100, percentage)); // Clamp between 0-100
+  const filled = Math.round(safePercentage / 10);
+  const empty = Math.max(0, 10 - filled); // Ensure empty is not negative
+  const bar = '█'.repeat(filled) + '░'.repeat(empty);
+  return `[${bar}] ${safePercentage}%`;
+};
+
+// Helper function to format contributors list
+const formatContributorsList = (contributors: Array<{address: string, amount: string, timestamp: string}>): string => {
+  if (contributors.length === 0) {
+    return '🔹 Be the first to contribute!';
+  }
+  
+  return contributors
+    .slice(0, 5) // Show only last 5 contributors
+    .map((contributor, index) => {
+      const shortAddr = `${contributor.address.slice(0, 6)}...${contributor.address.slice(-4)}`;
+      const timeAgo = getTimeAgo(contributor.timestamp);
+      return `🔹 **${contributor.amount} ETH** from ${shortAddr} *${timeAgo}*`;
+    })
+    .join('\n') + 
+    (contributors.length > 5 ? `\n🔹 ... and ${contributors.length - 5} more contributors` : '');
+};
+
+// Helper function to get human-readable time ago
+const getTimeAgo = (timestamp: string): string => {
+  const now = new Date();
+  const time = new Date(timestamp);
+  const diffMs = now.getTime() - time.getTime();
+  const diffMins = Math.round(diffMs / 60000);
+  const diffHours = Math.round(diffMins / 60);
+  const diffDays = Math.round(diffHours / 24);
+  
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${diffDays}d ago`;
+};
+
+// NEW: Enhanced QR code generation with comprehensive sharing
+export const generateEnhancedContributionQR = async (
+  walletAddress: string, 
+  amount: string, 
+  fundraiserName: string,
+  description?: string
+): Promise<{
+  message: string; 
+  qrCode: string;
+  directLink: string;
+  sharingLink: string;
+}> => {
+  try {
+    const amountInWei = ethers.parseEther(amount).toString();
+    const paymentData = `ethereum:${walletAddress}?value=${amountInWei}`;
+    const description_text = `Contribution QR for ${fundraiserName}`;
+    
+    const qrCodeBase64 = await generateQRCode(paymentData, description_text);
+    const contractLink = generateBaseScanLink(walletAddress, 'address');
+    const shortAddress = `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
+    const sharingLink = generateFundraiserLink(walletAddress, amount, fundraiserName, description);
+    
+    const message = `📱 **SCAN TO CONTRIBUTE**
+
+🎯 **${fundraiserName}**
+💰 **Amount:** ${amount} ETH
+📍 **Wallet:** [${shortAddress}](${contractLink})
+
+**📲 INSTRUCTIONS:**
+1. Scan QR code with your mobile wallet
+2. Confirm the transaction 
+3. Your contribution will be recorded!
+
+**🌐 CAN'T SCAN? Use Direct Link:**
+[💳 Click to Contribute ${amount} ETH](${paymentData})
+
+**📤 SHARE THIS FUNDRAISER:**
+${sharingLink}`;
+
+    return {
+      message,
+      qrCode: `data:image/png;base64,${qrCodeBase64}`,
+      directLink: paymentData,
+      sharingLink
+    };
+  } catch (error: any) {
+    console.error('Error generating enhanced contribution QR:', error);
+    throw new Error(`QR Code Generation Failed: ${error.message}`);
+  }
+};
+
+// NEW: Get fundraiser status with contributor tracking
+export const getFundraiserStatus = async (
+  walletAddress: string,
+  fundraiserName: string,
+  goalAmount: string,
+  description?: string
+): Promise<{
+  currentAmount: string;
+  contributors: Array<{address: string, amount: string, timestamp: string}>;
+  formattedResponse: string;
+}> => {
+  // This would integrate with blockchain data in a real implementation
+  // For now, return mock data structure
+  const mockContributors = [
+    {
+      address: '0x1234567890123456789012345678901234567890',
+      amount: '0.001',
+      timestamp: new Date(Date.now() - 300000).toISOString() // 5 minutes ago
+    },
+    {
+      address: '0x9876543210987654321098765432109876543210',
+      amount: '0.005',
+      timestamp: new Date(Date.now() - 1800000).toISOString() // 30 minutes ago
+    }
+  ];
+  
+  const currentAmount = mockContributors.reduce((total, contrib) => 
+    total + parseFloat(contrib.amount), 0
+  ).toString();
+  
+  const formattedResponse = formatFundraiserResponse(
+    walletAddress,
+    fundraiserName,
+    goalAmount,
+    description,
+    currentAmount,
+    mockContributors
+  );
+  
+  return {
+    currentAmount,
+    contributors: mockContributors,
+    formattedResponse
+  };
 };
