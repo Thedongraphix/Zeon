@@ -279,67 +279,34 @@ export const formatFundraiserResponse = (
   contributors?: Array<{address: string, amount: string, timestamp: string}>
 ): string => {
   const contractUrl = generateBaseScanLink(walletAddress, 'address');
-  const shortWallet = `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
   const sharingLink = generateFundraiserLink(walletAddress, goalAmount, fundraiserName, description, currentAmount);
   
-  // Calculate progress
   const goalNum = parseFloat(goalAmount);
   const currentNum = parseFloat(currentAmount || '0');
   const progressPercentage = goalNum > 0 ? Math.round((currentNum / goalNum) * 100) : 0;
-  const progressBar = generateProgressBar(progressPercentage);
-  
-  // Direct contribution links for different amounts
-  const quickAmounts = ['0.001', '0.005', '0.01', '0.05'];
-  const directLinks = quickAmounts.map(amount => {
-    const amountInWei = parseFloat(amount) * 1e18;
-    const paymentLink = `ethereum:${walletAddress}?value=${amountInWei}`;
-    return `• [${amount} ETH](${paymentLink})`;
-  }).join('\n');
 
-  const response = `🎉 **${fundraiserName}** - LIVE
+  const contributorsList = (contributors && contributors.length > 0)
+    ? contributors.map(c => `• ${c.amount} ETH from ${c.address.slice(0, 6)}...${c.address.slice(-4)}`).join('\n')
+    : "No contributions yet. Be the first!";
 
-${description || 'Help support this important cause!'}
+  const response = `
+### ${fundraiserName}
+*${description || 'A new fundraiser is live!'}*
 
----
+**Progress**: ${currentAmount || '0'} / ${goalAmount} ETH (${progressPercentage}%)
+**Contributors**: ${contributors?.length || 0}
 
-📊 **PROGRESS**
-${progressBar}
-💰 **${currentAmount || '0'} ETH** raised of **${goalAmount} ETH** goal (${progressPercentage}%)
+**To Contribute**:
+1. Ask me to "generate a QR code for [amount] ETH".
+2. Use the shareable link below.
 
----
+**Wallet Address**: \`${walletAddress}\`
+[View on Base Sepolia](${contractUrl})
 
-🏦 **WALLET ADDRESS**
-\`${walletAddress}\`
-🔍 [View on Base Sepolia](${contractUrl})
+**Share this fundraiser**: ${sharingLink}
+`;
 
----
-
-🚀 **CONTRIBUTE NOW**
-
-📱 **For Mobile Users (QR Code)**
-Ask me: "Generate QR code for [amount] ETH contribution"
-
-💻 **For Desktop Users (Direct Links)**
-${directLinks}
-
-🌐 **Share This Fundraiser**
-${sharingLink}
-
----
-
-👥 **CONTRIBUTORS** (${contributors?.length || 0})
-${formatContributorsList(contributors || [])}
-
----
-
-✨ **How to Contribute:**
-1. 🔗 Click a direct link above OR scan QR code
-2. 📱 Confirm in your wallet (MetaMask, Trust Wallet, etc.)
-3. ✅ Your contribution will appear here automatically!
-
-💡 **Need help?** Ask me to generate a custom QR code for any amount!`;
-
-  return response;
+  return response.trim();
 };
 
 // Helper function to generate progress bar
@@ -398,27 +365,15 @@ export const generateEnhancedContributionQR = async (
   try {
     const amountInWei = ethers.parseEther(amount).toString();
     const paymentData = `ethereum:${walletAddress}?value=${amountInWei}`;
-    const description_text = `Contribution QR for ${fundraiserName}`;
+    const description_text = `Scan to contribute ${amount} ETH to ${fundraiserName}`;
     
     const qrCodeBase64 = await generateQRCode(paymentData, description_text);
-    const contractLink = generateBaseScanLink(walletAddress, 'address');
-    const shortAddress = `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
     const sharingLink = generateFundraiserLink(walletAddress, amount, fundraiserName, description);
     
-    const message = `📱 Scan to contribute ${amount} ETH to "${fundraiserName}"
-Wallet: ${shortAddress}
-[View on Base Sepolia](${contractLink})
-
-Instructions:
-1. Scan QR code with your mobile wallet
-2. Confirm the transaction 
-3. Your contribution will be recorded!
-
-Can't scan? [Click to Contribute ${amount} ETH](${paymentData})
-Share this fundraiser: ${sharingLink}`;
+    const message = `Here is the QR code for a ${amount} ETH contribution to "${fundraiserName}".\n\n**Shareable Link**: ${sharingLink}`;
 
     return {
-      message,
+      message: description_text, // Use a shorter message for the alt text
       qrCode: `data:image/png;base64,${qrCodeBase64}`,
       directLink: paymentData,
       sharingLink

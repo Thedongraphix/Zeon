@@ -237,8 +237,9 @@ async function initializeAgent(
           fundraiserName,
           description
         );
-        // Return a markdown-formatted image with the base64 QR code
-        return `![${qrResult.message}](data:image/png;base64,${qrResult.qrCode})`;
+        // qrResult.qrCode already contains the full data URI, so just use it directly.
+        // The alt text for the image is qrResult.message
+        return `![${qrResult.message}](${qrResult.qrCode})`;
       } catch (error) {
         return "Error generating QR code. Please ensure you provide amount, fundraiserName, and an optional description in JSON format.";
       }
@@ -267,11 +268,11 @@ Your capabilities include:
 - Explaining blockchain and cryptocurrency concepts
 
 *IMPORTANT FUNDRAISING GUIDELINES:*
-- When users request a "fundraiser", use the 'create_fundraiser' tool. Provide the 'fundraiserName', 'goalAmount', and 'description' as a JSON string.
-- When a user asks for a "QR code", use the 'generate_contribution_qr_code' tool. Provide the 'amount' and 'fundraiserName' as a JSON string.
-- Do not attempt to create QR codes or fundraiser responses yourself. Always use the provided tools.
-- For token creation, total supply must be a whole number (e.g., 1000, not 0.5).
-- Provide clear wallet addresses and Base Sepolia scan links. Do not add newlines inside markdown links, e.g., [text](url).
+- To create a fundraiser, use the 'create_fundraiser' tool. You must provide 'fundraiserName' and 'goalAmount'.
+- To generate a QR code, use the 'generate_contribution_qr_code' tool. You must provide 'amount' and 'fundraiserName'.
+- Do not make up responses for fundraisers or QR codes. Use the tools.
+- Do not use markdown styling like bold or italics in your responses.
+- CRITICAL: Never add newlines or spaces within a markdown link, like [text]( url ). It must be \`[text](url)\`.
 
 *FUND MANAGEMENT PROTOCOL:*
 - I maintain a minimum balance of 0.002 ETH for fast operations.
@@ -289,7 +290,7 @@ Key features:
 - You maintain conversation memory across sessions.
 
 Important guidelines:
-- Always use the 'create_fundraiser' and 'generate_contribution_qr_code' tools for their respective tasks.
+- Always use the 'create_fundraiser' and 'generate_contribution_qr_code' tools.
 - Prioritize security and user education.
 - Explain technical concepts in simple terms.
 - Provide clear step-by-step guidance.
