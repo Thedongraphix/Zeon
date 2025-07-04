@@ -17,6 +17,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import QRCode from 'qrcode';
+import { DynamicTool } from "@langchain/core/tools";
 
 // Load environment variables from .env.local file
 dotenv.config({ path: '.env.local' });
@@ -198,8 +199,54 @@ async function initializeAgent(
   });
 
   // Get LangChain-compatible tools
-  const tools = await getLangChainTools(agentKit);
-  console.log(`🛠️  Loaded ${tools.length} tools for AgentKit`);
+  const agentKitTools = await getLangChainTools(agentKit);
+  console.log(`🛠️  Loaded ${agentKitTools.length} tools for AgentKit`);
+
+  // Create custom tools for fundraiser management
+  const fundraiserTool = new DynamicTool({
+    name: "create_fundraiser",
+    description: `Creates a new fundraiser for a specified ETH amount. Call this when a user wants to start a fundraiser. Returns a formatted string with fundraiser details, progress, and contribution options.`,
+    func: async (input: string) => {
+      try {
+        // The agent will pass a JSON string as input
+        const { fundraiserName, goalAmount, description } = JSON.parse(input);
+        const walletAddress = await provider.getAddress();
+        const fundraiserStatus = await getFundraiserStatus(
+          walletAddress,
+          fundraiserName,
+          goalAmount,
+          description
+        );
+        return fundraiserStatus.formattedResponse;
+      } catch (error) {
+        return "Error creating fundraiser. Please ensure you provide fundraiserName, goalAmount, and an optional description in JSON format.";
+      }
+    },
+  });
+
+  const qrCodeTool = new DynamicTool({
+    name: "generate_contribution_qr_code",
+    description: "Generates a QR code for a specific ETH contribution amount to a fundraiser. Call this when a user asks for a QR code.",
+    func: async (input: string) => {
+      try {
+        const { amount, fundraiserName, description } = JSON.parse(input);
+        const walletAddress = await provider.getAddress();
+        const qrResult = await generateEnhancedContributionQR(
+          walletAddress,
+          amount,
+          fundraiserName,
+          description
+        );
+        // Return a markdown-formatted image with the base64 QR code
+        return `![${qrResult.message}](data:image/png;base64,${qrResult.qrCode})`;
+      } catch (error) {
+        return "Error generating QR code. Please ensure you provide amount, fundraiserName, and an optional description in JSON format.";
+      }
+    },
+  });
+
+  const tools = [...agentKitTools, fundraiserTool, qrCodeTool];
+  console.log(`-  Added 2 custom tools. Total tools: ${tools.length}`);
 
   // Create memory saver
   let memory = memoryStore[userId];
@@ -220,35 +267,37 @@ Your capabilities include:
 - Explaining blockchain and cryptocurrency concepts
 
 *IMPORTANT FUNDRAISING GUIDELINES:*
-- When users request a "fundraiser" for a specific ETH amount, create a simple contribution wallet setup rather than deploying a token
-- For token creation, total supply must be a whole number (e.g., 1000, not 0.5)
-- Always provide comprehensive sharing options: QR codes, direct links, and web sharing URLs
-- Include progress tracking, contributor listings, and mobile-friendly payment options
-- Generate multiple contribution amount options for different supporter levels
+- When users request a "fundraiser", use the 'create_fundraiser' tool. Provide the 'fundraiserName', 'goalAmount', and 'description' as a JSON string.
+- When a user asks for a "QR code", use the 'generate_contribution_qr_code' tool. Provide the 'amount' and 'fundraiserName' as a JSON string.
+- Do not attempt to create QR codes or fundraiser responses yourself. Always use the provided tools.
+- For token creation, total supply must be a whole number (e.g., 1000, not 0.5).
+- Provide clear wallet addresses and Base Sepolia scan links. Do not add newlines inside markdown links, e.g., [text](url).
 
 *FUND MANAGEMENT PROTOCOL:*
-- I maintain a minimum balance of 0.002 ETH for fast operations
-- Balance is automatically monitored and topped up from faucet as needed
-- If funds are temporarily low, I'll inform users with specific timing expectations
-- For urgent needs, users can send ETH directly to my wallet address
-- I proactively prevent fund-related delays through smart balance management
+- I maintain a minimum balance of 0.002 ETH for fast operations.
+- Balance is automatically monitored and topped up from faucet as needed.
+- If funds are temporarily low, I'll inform users with specific timing expectations.
+- For urgent needs, users can send ETH directly to my wallet address.
+- I proactively prevent fund-related delays through smart balance management.
 
 Key features:
-- You operate on the ${NETWORK_ID} network
-- You can create secure wallets for users
-- You can generate enhanced QR codes with direct links for donations
-- You can provide comprehensive fundraiser sharing options
-- You track contributions and display progress
-- You maintain conversation memory across sessions
+- You operate on the ${NETWORK_ID} network.
+- You can create secure wallets for users.
+- You use tools to generate enhanced QR codes and fundraiser details.
+- You can provide comprehensive fundraiser sharing options.
+- You track contributions and display progress.
+- You maintain conversation memory across sessions.
 
 Important guidelines:
-- Always prioritize security and user education
-- Explain technical concepts in simple terms
-- Provide clear step-by-step guidance
-- Ask clarifying questions when needed
-- Be helpful, friendly, and professional
-- For fundraising, focus on wallet-to-wallet contributions rather than token deployment
-- Always include shareable links and QR codes for contributions
+- Always use the 'create_fundraiser' and 'generate_contribution_qr_code' tools for their respective tasks.
+- Prioritize security and user education.
+- Explain technical concepts in simple terms.
+- Provide clear step-by-step guidance.
+- Ask clarifying questions when needed.
+- Be helpful, friendly, and professional.
+- For fundraising, focus on wallet-to-wallet contributions rather than token deployment.
+- Always include shareable links and QR codes for contributions.
+- IMPORTANT: When creating markdown links, ensure that the link text and URL do not contain any newlines or extra spaces. For example, [View on Base Sepolia](https://sepolia.basescan.org/...) is correct.
 
 Current user: ${userId}
 Wallet Address: ${walletAddress}
@@ -259,7 +308,7 @@ Remember to always verify addresses and amounts before executing transactions.`;
   // Create the agent
   const agent = createReactAgent({
     llm,
-    tools,
+    tools, // Use combined tools
     checkpointSaver: memory,
     messageModifier: systemPrompt,
   });

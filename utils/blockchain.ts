@@ -362,7 +362,7 @@ const formatContributorsList = (contributors: Array<{address: string, amount: st
     .map((contributor, index) => {
       const shortAddr = `${contributor.address.slice(0, 6)}...${contributor.address.slice(-4)}`;
       const timeAgo = getTimeAgo(contributor.timestamp);
-      return `🔹 **${contributor.amount} ETH** from ${shortAddr} *${timeAgo}*`;
+      return `🔹 ${contributor.amount} ETH from ${shortAddr} (${timeAgo})`;
     })
     .join('\n') + 
     (contributors.length > 5 ? `\n🔹 ... and ${contributors.length - 5} more contributors` : '');
@@ -405,22 +405,17 @@ export const generateEnhancedContributionQR = async (
     const shortAddress = `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
     const sharingLink = generateFundraiserLink(walletAddress, amount, fundraiserName, description);
     
-    const message = `📱 **SCAN TO CONTRIBUTE**
+    const message = `📱 Scan to contribute ${amount} ETH to "${fundraiserName}"
+Wallet: ${shortAddress}
+[View on Base Sepolia](${contractLink})
 
-🎯 **${fundraiserName}**
-💰 **Amount:** ${amount} ETH
-📍 **Wallet:** [${shortAddress}](${contractLink})
-
-**📲 INSTRUCTIONS:**
+Instructions:
 1. Scan QR code with your mobile wallet
 2. Confirm the transaction 
 3. Your contribution will be recorded!
 
-**🌐 CAN'T SCAN? Use Direct Link:**
-[💳 Click to Contribute ${amount} ETH](${paymentData})
-
-**📤 SHARE THIS FUNDRAISER:**
-${sharingLink}`;
+Can't scan? [Click to Contribute ${amount} ETH](${paymentData})
+Share this fundraiser: ${sharingLink}`;
 
     return {
       message,
@@ -445,24 +440,10 @@ export const getFundraiserStatus = async (
   contributors: Array<{address: string, amount: string, timestamp: string}>;
   formattedResponse: string;
 }> => {
-  // This would integrate with blockchain data in a real implementation
-  // For now, return mock data structure
-  const mockContributors = [
-    {
-      address: '0x1234567890123456789012345678901234567890',
-      amount: '0.001',
-      timestamp: new Date(Date.now() - 300000).toISOString() // 5 minutes ago
-    },
-    {
-      address: '0x9876543210987654321098765432109876543210',
-      amount: '0.005',
-      timestamp: new Date(Date.now() - 1800000).toISOString() // 30 minutes ago
-    }
-  ];
-  
-  const currentAmount = mockContributors.reduce((total, contrib) => 
-    total + parseFloat(contrib.amount), 0
-  ).toString();
+  // In a real implementation, this would fetch transaction data from the blockchain.
+  // For now, we will display the fundraiser with no contributions yet.
+  const contributors: Array<{address: string, amount: string, timestamp: string}> = [];
+  const currentAmount = '0';
   
   const formattedResponse = formatFundraiserResponse(
     walletAddress,
@@ -470,12 +451,12 @@ export const getFundraiserStatus = async (
     goalAmount,
     description,
     currentAmount,
-    mockContributors
+    contributors
   );
   
   return {
     currentAmount,
-    contributors: mockContributors,
+    contributors,
     formattedResponse
   };
 };
