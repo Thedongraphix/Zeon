@@ -289,8 +289,8 @@ export const formatFundraiserResponse = (
     ? contributors.map(c => `• ${c.amount} ETH from ${c.address.slice(0, 6)}...${c.address.slice(-4)}`).join('\n')
     : "No contributions yet. Be the first!";
 
-  const response = `
-### ${fundraiserName}
+  // Format the response with carefully controlled line breaks to prevent link splitting
+  const response = `### ${fundraiserName}
 *${description || 'A new fundraiser is live!'}*
 
 **Progress**: ${currentAmount || '0'} / ${goalAmount} ETH (${progressPercentage}%)
@@ -301,12 +301,12 @@ export const formatFundraiserResponse = (
 2. Use the shareable link below.
 
 **Wallet Address**: \`${walletAddress}\`
+
 [View on Base Sepolia](${contractUrl})
 
-**Share this fundraiser**: ${sharingLink}
-`;
+[Share this fundraiser](${sharingLink})`;
 
-  return response.trim();
+  return response;
 };
 
 // Helper function to generate progress bar
