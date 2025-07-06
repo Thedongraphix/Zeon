@@ -285,28 +285,23 @@ export const formatFundraiserResponse = (
   const currentNum = parseFloat(currentAmount || '0');
   const progressPercentage = goalNum > 0 ? Math.round((currentNum / goalNum) * 100) : 0;
 
-  const contributorsList = (contributors && contributors.length > 0)
-    ? contributors.map(c => `• ${c.amount} ETH from ${c.address.slice(0, 6)}...${c.address.slice(-4)}`).join('\n')
-    : "No contributions yet. Be the first!";
+  // Build the response line-by-line to prevent markdown link issues
+  const lines = [
+    `### ${fundraiserName}`,
+    `*${description || 'A new fundraiser is live!'}*`,
+    '',
+    `**Progress**: ${currentAmount || '0'} / ${goalAmount} ETH (${progressPercentage}%)`,
+    `**Contributors**: ${contributors?.length || 0}`,
+    '',
+    '**To Contribute**: Check the options in the shareable link below.',
+    '',
+    `**Wallet Address**: \`${walletAddress}\``,
+    `[View on Base Sepolia](${contractUrl})`,
+    '',
+    `[Click here to share and contribute](${sharingLink})`
+  ];
 
-  // Format the response with carefully controlled line breaks to prevent link splitting
-  const response = `### ${fundraiserName}
-*${description || 'A new fundraiser is live!'}*
-
-**Progress**: ${currentAmount || '0'} / ${goalAmount} ETH (${progressPercentage}%)
-**Contributors**: ${contributors?.length || 0}
-
-**To Contribute**:
-1. Ask me to "generate a QR code for [amount] ETH".
-2. Use the shareable link below.
-
-**Wallet Address**: \`${walletAddress}\`
-
-[View on Base Sepolia](${contractUrl})
-
-[Share this fundraiser](${sharingLink})`;
-
-  return response;
+  return lines.join('\n');
 };
 
 // Helper function to generate progress bar
@@ -348,40 +343,6 @@ const getTimeAgo = (timestamp: string): string => {
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   return `${diffDays}d ago`;
-};
-
-// NEW: Enhanced QR code generation with comprehensive sharing
-export const generateEnhancedContributionQR = async (
-  walletAddress: string, 
-  amount: string, 
-  fundraiserName: string,
-  description?: string
-): Promise<{
-  message: string; 
-  qrCode: string;
-  directLink: string;
-  sharingLink: string;
-}> => {
-  try {
-    const amountInWei = ethers.parseEther(amount).toString();
-    const paymentData = `ethereum:${walletAddress}?value=${amountInWei}`;
-    const description_text = `Scan to contribute ${amount} ETH to ${fundraiserName}`;
-    
-    const qrCodeBase64 = await generateQRCode(paymentData, description_text);
-    const sharingLink = generateFundraiserLink(walletAddress, amount, fundraiserName, description);
-    
-    const message = `Here is the QR code for a ${amount} ETH contribution to "${fundraiserName}".\n\n**Shareable Link**: ${sharingLink}`;
-
-    return {
-      message: description_text, // Use a shorter message for the alt text
-      qrCode: `data:image/png;base64,${qrCodeBase64}`,
-      directLink: paymentData,
-      sharingLink
-    };
-  } catch (error: any) {
-    console.error('Error generating enhanced contribution QR:', error);
-    throw new Error(`QR Code Generation Failed: ${error.message}`);
-  }
 };
 
 // NEW: Get fundraiser status with contributor tracking

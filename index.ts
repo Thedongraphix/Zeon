@@ -18,6 +18,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import QRCode from 'qrcode';
 import { DynamicTool } from "@langchain/core/tools";
+import { ethers } from 'ethers';
 
 // Load environment variables from .env.local file
 dotenv.config({ path: '.env.local' });
@@ -30,7 +31,6 @@ import { validateEnvironment } from "./helpers/client.js";
 import { 
   generateFundraiserLink, 
   formatFundraiserResponse, 
-  generateEnhancedContributionQR,
   getFundraiserStatus 
 } from "./utils/blockchain.js";
 // Import balance management
@@ -231,15 +231,21 @@ async function initializeAgent(
       try {
         const { amount, fundraiserName, description } = JSON.parse(input);
         const walletAddress = await provider.getAddress();
-        const qrResult = await generateEnhancedContributionQR(
+        
+        // Construct the URL to the API endpoint
+        const params = new URLSearchParams({
           walletAddress,
           amount,
           fundraiserName,
-          description
-        );
-        // qrResult.qrCode already contains the full data URI, so just use it directly.
-        // The alt text for the image is qrResult.message
-        return `![${qrResult.message}](${qrResult.qrCode})`;
+        });
+        if (description) params.append('description', description);
+        
+        // This is a relative URL, so the final URL will depend on the server's address
+        const qrApiUrl = `/api/qr-code?${params.toString()}`;
+        
+        // Return a markdown image tag pointing to the API endpoint
+        return `![QR Code for ${amount} ETH to ${fundraiserName}](${qrApiUrl})`;
+
       } catch (error) {
         return "Error generating QR code. Please ensure you provide amount, fundraiserName, and an optional description in JSON format.";
       }
@@ -745,46 +751,44 @@ async function main() {
     }
   });
 
-  // NEW: Enhanced QR code generation endpoint
-  app.post('/api/qr-code', async (req, res) => {
-    console.log('📱 QR code generation request:', JSON.stringify(req.body, null, 2));
+  // Corrected QR code generation endpoint
+  app.get('/api/qr-code', async (req, res) => {
+    console.log('📱 QR code generation request:', JSON.stringify(req.query, null, 2));
     
-    const { walletAddress, amount, fundraiserName, description } = req.body;
+    const { walletAddress, amount, fundraiserName } = req.query;
     
     if (!walletAddress || !amount || !fundraiserName) {
       return res.status(400).json({ 
         error: 'Missing required fields: walletAddress, amount, fundraiserName',
-        received: req.body
+        received: req.query
       });
     }
     
     try {
-      console.log(`📱 Generating QR code for ${amount} ETH contribution to "${fundraiserName}"`);
+      console.log(`🎯 Generating QR code image for ${amount} ETH contribution to "${fundraiserName}"`);
       
-      // Generate enhanced QR code with direct links
-      const qrResult = await generateEnhancedContributionQR(
-        walletAddress,
-        amount,
-        fundraiserName,
-        description
-      );
+      const amountInWei = ethers.parseEther(amount as string).toString();
+      const paymentData = `ethereum:${walletAddress}?value=${amountInWei}`;
       
-      console.log(`✅ QR code generated successfully`);
-      
-      res.json({ 
-        ...qrResult,
-        metadata: {
-          timestamp: new Date().toISOString(),
-          network: NETWORK_ID,
-          amount,
-          walletAddress
-        }
+      // Generate QR code as a buffer
+      const qrPngBuffer = await QRCode.toBuffer(paymentData, {
+        type: 'png',
+        width: 256,
+        margin: 2,
+        errorCorrectionLevel: 'M'
       });
+      
+      console.log(`✅ QR code image generated successfully (${qrPngBuffer.length} bytes)`);
+      
+      // Send the buffer as a PNG image
+      res.setHeader('Content-Type', 'image/png');
+      res.send(qrPngBuffer);
+
     } catch (error) {
-      console.error("❌ Error generating QR code:", error);
+      console.error("❌ Error generating QR code image:", error);
       
       res.status(500).json({ 
-        error: 'Failed to generate QR code',
+        error: 'Failed to generate QR code image',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
