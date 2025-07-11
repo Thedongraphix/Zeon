@@ -233,24 +233,12 @@ async function initializeAgent(
         const { amount, fundraiserName, description } = JSON.parse(input);
         const walletAddress = await provider.getAddress();
         
-        // Use the new QR code generator to create absolute URLs
-        const baseUrl = process.env.NODE_ENV === 'development' 
-          ? 'http://localhost:10000' 
-          : 'https://zeon-hybrid.onrender.com';
+        // Generate actual QR code data instead of just URLs
+        const { generateContributionQR } = await import('./utils/blockchain.js');
+        const qrData = await generateContributionQR(walletAddress, amount, fundraiserName);
         
-        // Construct the absolute URL to the API endpoint
-        const params = new URLSearchParams({
-          walletAddress,
-          amount,
-          fundraiserName,
-        });
-        if (description) params.append('description', description);
-        
-        // This is now an absolute URL that will work when scanned
-        const qrApiUrl = `${baseUrl}/api/qr-code?${params.toString()}`;
-        
-        // Return a markdown image tag pointing to the absolute API endpoint
-        return `![QR Code for ${amount} ETH to ${fundraiserName}](${qrApiUrl})`;
+        // Return the QR data as JSON string so frontend can parse it
+        return JSON.stringify(qrData);
 
       } catch (error) {
         return "Error generating QR code. Please ensure you provide amount, fundraiserName, and an optional description in JSON format.";
@@ -279,20 +267,24 @@ Your capabilities include:
 - Providing guidance on fundraising strategies
 - Explaining blockchain and cryptocurrency concepts
 
+*CRITICAL FORMATTING RULES:*
+- NEVER break URLs across multiple lines
+- NEVER add spaces or line breaks inside markdown links
+- Links must be formatted as [text](url) on a single unbroken line
+- Do NOT add any text formatting that could break link parsing
+- Output tool responses exactly as provided without modification
+
 *IMPORTANT FUNDRAISING GUIDELINES:*
 - To create a fundraiser, use the 'create_fundraiser' tool. You must provide 'fundraiserName' and 'goalAmount'.
 - To generate a QR code, use the 'generate_contribution_qr_code' tool. You must provide 'amount' and 'fundraiserName'.
 - Do not make up responses for fundraisers or QR codes. Use the tools.
-- Do not use markdown styling like bold or italics in your responses.
-- CRITICAL: Never add line breaks, spaces, or split markdown links across lines. Links must be: [text](url) on a single line.
-- NEVER modify or reformat the output from the tools - use exactly as provided.
+- Always use the exact output from tools without reformatting.
 
 *FUND MANAGEMENT PROTOCOL:*
 - I maintain a minimum balance of 0.002 ETH for fast operations.
 - Balance is automatically monitored and topped up from faucet as needed.
 - If funds are temporarily low, I'll inform users with specific timing expectations.
 - For urgent needs, users can send ETH directly to my wallet address.
-- I proactively prevent fund-related delays through smart balance management.
 
 Key features:
 - You operate on the ${NETWORK_ID} network.
@@ -310,8 +302,6 @@ Important guidelines:
 - Ask clarifying questions when needed.
 - Be helpful, friendly, and professional.
 - For fundraising, focus on wallet-to-wallet contributions rather than token deployment.
-- Always include shareable links and QR codes for contributions.
-- IMPORTANT: When creating markdown links, ensure that the link text and URL do not contain any newlines or extra spaces. For example, [View on Base Sepolia](https://sepolia.basescan.org/...) is correct.
 
 Current user: ${userId}
 Wallet Address: ${walletAddress}

@@ -4,7 +4,6 @@ import { useWallets } from '@privy-io/react-auth';
 import { 
   WalletIcon,
   QrCodeIcon,
-  ClipboardIcon,
   ArrowTopRightOnSquareIcon,
   UsersIcon
 } from '@heroicons/react/24/outline';
@@ -37,7 +36,6 @@ const FundraiserPage: React.FC<FundraiserPageProps> = ({
   const [qrCodeData, setQrCodeData] = useState('');
   const [showQR, setShowQR] = useState(false);
   const [isContributing, setIsContributing] = useState(false);
-  const [showCopyToast, setShowCopyToast] = useState(false);
 
   const wallet = wallets[0];
   const progressPercentage = Math.min((parseFloat(currentAmount) / parseFloat(goalAmount)) * 100, 100);
@@ -79,15 +77,7 @@ const FundraiserPage: React.FC<FundraiserPageProps> = ({
     }
   };
 
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setShowCopyToast(true);
-      setTimeout(() => setShowCopyToast(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  };
+  // Removed copy functionality to fix link clickability
 
   const handleContribute = async () => {
     if (!authenticated) {
@@ -286,17 +276,9 @@ const FundraiserPage: React.FC<FundraiserPageProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-blue-100">Wallet Address:</span>
-              <div className="flex items-center gap-2">
-                <span className="text-white font-mono text-sm">
-                  {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                </span>
-                <button
-                  onClick={() => copyToClipboard(walletAddress)}
-                  className="text-blue-400 hover:text-blue-300"
-                >
-                  <ClipboardIcon className="h-4 w-4" />
-                </button>
-              </div>
+              <span className="text-white font-mono text-sm select-all">
+                {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+              </span>
             </div>
             
             <div className="flex items-center justify-between">
@@ -347,12 +329,7 @@ const FundraiserPage: React.FC<FundraiserPageProps> = ({
           </div>
         )}
 
-        {/* Copy Toast */}
-        {showCopyToast && (
-          <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50">
-            ✅ Copied to clipboard!
-          </div>
-        )}
+
       </div>
     </div>
   );

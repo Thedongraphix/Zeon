@@ -267,7 +267,7 @@ export const generateFundraiserLink = (
   return generateFundraiserURL(walletAddress, params);
 };
 
-// NEW: Enhanced fundraiser response formatter with sharing links
+// NEW: Enhanced fundraiser response formatter with sharing links - NO COPY FUNCTIONALITY
 export const formatFundraiserResponse = (
   walletAddress: string,
   fundraiserName: string,
@@ -283,23 +283,24 @@ export const formatFundraiserResponse = (
   const currentNum = parseFloat(currentAmount || '0');
   const progressPercentage = goalNum > 0 ? Math.round((currentNum / goalNum) * 100) : 0;
 
-  // Build the response line-by-line to prevent markdown link issues
-  const lines = [
-    `### ${fundraiserName}`,
-    `*${description || 'A new fundraiser is live!'}*`,
-    '',
-    `**Progress**: ${currentAmount || '0'} / ${goalAmount} ETH (${progressPercentage}%)`,
-    `**Contributors**: ${contributors?.length || 0}`,
-    '',
-    '**To Contribute**: Check the options in the shareable link below.',
-    '',
-    `**Wallet Address**: \`${walletAddress}\``,
-    `[View on Base Sepolia](${contractUrl})`,
-    '',
-    `[Click here to share and contribute](${sharingLink})`
-  ];
+  // Format wallet address without copy functionality
+  const shortAddress = `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
 
-  return lines.join('\n');
+  // Build the response as a single block to prevent line breaks in links
+  return `### ${fundraiserName}
+${description || 'A new fundraiser is live!'}
+
+**Progress**: ${currentAmount || '0'} / ${goalAmount} ETH (${progressPercentage}%)
+**Contributors**: ${contributors?.length || 0}
+
+**Wallet Address**: ${shortAddress}
+**Network**: Base Sepolia
+
+**Links**:
+• [View on Base Sepolia Explorer](${contractUrl})
+• [Share and Contribute to this Fundraiser](${sharingLink})
+
+Ready to accept contributions on Base Sepolia network!`;
 };
 
 // Helper function to generate progress bar

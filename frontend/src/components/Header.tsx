@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { useWallets } from '@privy-io/react-auth';
-import { ChevronDownIcon, DocumentDuplicateIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
 interface HeaderProps {
   isFloating?: boolean;
@@ -12,7 +12,6 @@ const Header: React.FC<HeaderProps> = ({ isFloating = true, onLogoClick }) => {
   const { authenticated, logout } = usePrivy();
   const { wallets } = useWallets();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const wallet = wallets[0];
@@ -28,15 +27,7 @@ const Header: React.FC<HeaderProps> = ({ isFloating = true, onLogoClick }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const copyToClipboard = async (text: string, field: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  };
+  // Removed copy functionality to fix link clickability
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -99,25 +90,15 @@ const Header: React.FC<HeaderProps> = ({ isFloating = true, onLogoClick }) => {
                 <div className="absolute right-0 top-full mt-3 w-72 sm:w-80 glass-modern rounded-[20px] sm:rounded-[24px] p-4 sm:p-6 shadow-2xl border border-blue-500/20 animate-slide-down">
                   <div className="space-y-6">
                     
-                    {/* Wallet Address */}
+                    {/* Wallet Address - No Copy Functionality */}
                     <div>
                       <label className="text-xs font-semibold text-blue-300 uppercase tracking-wider mb-2 block">
                         Wallet Address
                       </label>
-                      <div className="flex items-center justify-between p-3 glass-subtle rounded-xl">
-                        <span className="font-mono text-sm text-white">
+                      <div className="p-3 glass-subtle rounded-xl">
+                        <span className="font-mono text-sm text-white select-all">
                           {formatAddress(wallet.address)}
                         </span>
-                        <button
-                          onClick={() => copyToClipboard(wallet.address, 'address')}
-                          className="p-2 hover:bg-blue-500/20 rounded-lg transition-colors duration-200"
-                        >
-                          {copiedField === 'address' ? (
-                            <CheckIcon className="h-4 w-4 text-blue-400" />
-                          ) : (
-                            <DocumentDuplicateIcon className="h-4 w-4 text-blue-300 hover:text-white" />
-                          )}
-                        </button>
                       </div>
                     </div>
 

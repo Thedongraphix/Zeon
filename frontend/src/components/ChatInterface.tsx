@@ -28,7 +28,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [showCopyToast, setShowCopyToast] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -126,26 +125,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
     return senderAddress === user?.wallet?.address;
   };
 
-  // Helper function to copy text to clipboard
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setShowCopyToast(true);
-      setTimeout(() => setShowCopyToast(false), 2000);
-      console.log('Copied to clipboard:', text);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      setShowCopyToast(true);
-      setTimeout(() => setShowCopyToast(false), 2000);
-    }
-  };
+  // Removed copy functionality to fix link clickability issues
 
   // Helper function to extract transaction hashes from content
   const extractTransactionHash = (content: string) => {
@@ -344,21 +324,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
                   ) : null;
                 })()}
                 
-                {/* Wallet Address Section */}
+                {/* Wallet Address Section - No Copy Functionality */}
                 {walletAddress && (
                   <div className="wallet-address-section">
-                    <div className="wallet-address">
+                    <div className="wallet-address-display">
                       <span className="address-text">{walletAddress}</span>
-                      <button
-                        onClick={() => copyToClipboard(walletAddress)}
-                        className="copy-button"
-                        title="Copy wallet address"
-                      >
-                        <ClipboardIcon className="h-4 w-4" />
-                      </button>
                     </div>
                     <div className="text-xs text-blue-400 mt-1 text-center">
-                      Tap to copy wallet address
+                      Wallet Address for Contributions
                     </div>
                   </div>
                 )}
@@ -366,7 +339,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
             </div>
           </div>
           
-          {/* Additional Transaction Links */}
+          {/* Additional Transaction Links - No Copy Functionality */}
           {txHashes.length > 0 && (
             <div className="mt-3">
               {txHashes.map((txHash, index) => (
@@ -383,13 +356,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
                     </span>
                     <span className="external-link-icon">↗</span>
                   </a>
-                  <button
-                    onClick={() => copyToClipboard(txHash)}
-                    className="transaction-copy-button"
-                    title="Copy transaction hash"
-                  >
-                    <ClipboardIcon className="h-4 w-4" />
-                  </button>
                 </div>
               ))}
             </div>
@@ -406,7 +372,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
     return renderTextWithLinks(content, txHashes, walletAddress);
   };
 
-  // Helper function to render transaction links
+  // Helper function to render transaction links - No Copy Functionality
   const renderTransactionLinks = (txHashes: string[]) => {
     return (
       <div className="mt-3">
@@ -424,13 +390,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
               </span>
                 <span className="external-link-icon">↗</span>
               </a>
-              <button
-                onClick={() => copyToClipboard(txHash)}
-                className="transaction-copy-button"
-                title="Copy transaction hash"
-              >
-                <ClipboardIcon className="h-4 w-4" />
-              </button>
             </div>
         ))}
       </div>
@@ -484,18 +443,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
               );
             }
             
-            // Handle wallet address placeholder
+            // Handle wallet address placeholder - No Copy Functionality
             if (part === '__WALLET_PLACEHOLDER__' && walletAddress) {
               return (
                 <span key={`wallet-inline-${index}`} className="inline-wallet-address">
                   <span className="address-text">{walletAddress}</span>
-                  <button
-                    onClick={() => copyToClipboard(walletAddress)}
-                    className="inline-copy-button ml-1"
-                    title="Copy wallet address"
-                  >
-                    <ClipboardIcon className="h-3 w-3" />
-                  </button>
                 </span>
               );
             }
@@ -512,21 +464,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
           </div>
         )}
         
-        {/* Standalone wallet address section */}
+        {/* Standalone wallet address section - No Copy Functionality */}
         {walletAddress && !processedContent.includes('__WALLET_PLACEHOLDER__') && (
           <div className="wallet-address-section mt-3">
-            <div className="wallet-address">
+            <div className="wallet-address-display">
               <span className="address-text">{walletAddress}</span>
-              <button
-                onClick={() => copyToClipboard(walletAddress)}
-                className="copy-button"
-                title="Copy wallet address"
-              >
-                <ClipboardIcon className="h-4 w-4" />
-              </button>
             </div>
             <div className="text-xs text-blue-400 mt-1 text-center">
-              Tap to copy wallet address
+              Wallet Address for Contributions
             </div>
           </div>
         )}
@@ -708,14 +653,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* Copy Toast Notification */}
-      {showCopyToast && (
-        <div className="copy-toast">
-          <div className="copy-toast-content">
-            <span>✓ Copied to clipboard!</span>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };
