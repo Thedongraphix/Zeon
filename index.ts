@@ -564,19 +564,90 @@ async function main() {
     next();
   });
 
-  // CORS middleware
+  // Enhanced CORS middleware with proper preflight handling
   app.use(cors({
-    origin: [
-      'http://localhost:3000', 
-      'https://zeon-frontend.vercel.app', 
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:3001', 
+        'https://zeon-frontend.vercel.app',
+        'https://www.zeonai.xyz',
+        'https://zeonai.xyz',
+        'https://zeon.vercel.app',
+        /\.vercel\.app$/,
+        /\.netlify\.app$/,
+        /localhost:\d+$/
+      ];
+      
+      // Check if origin is allowed
+      const isAllowed = allowedOrigins.some(allowedOrigin => {
+        if (typeof allowedOrigin === 'string') {
+          return origin === allowedOrigin;
+        } else if (allowedOrigin instanceof RegExp) {
+          return allowedOrigin.test(origin);
+        }
+        return false;
+      });
+      
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        console.log(`🚫 CORS blocked origin: ${origin}`);
+        callback(null, false);
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD', 'PATCH'],
+    allowedHeaders: [
+      'Origin',
+      'X-Requested-With',
+      'Content-Type',
+      'Accept',
+      'Authorization',
+      'Cache-Control',
+      'X-HTTP-Method-Override',
+      'Access-Control-Allow-Headers',
+      'Access-Control-Allow-Origin',
+      'Access-Control-Allow-Methods'
+    ],
+    exposedHeaders: ['Content-Length', 'Content-Type'],
+    optionsSuccessStatus: 200, // Legacy browser support
+    preflightContinue: false,
+    maxAge: 86400 // 24 hours
+  }));
+  
+  // Additional CORS headers middleware as fallback
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://zeon-frontend.vercel.app',
       'https://www.zeonai.xyz',
       'https://zeonai.xyz',
-      /\.vercel\.app$/
-    ],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-  }));
+      'https://zeon.vercel.app'
+    ];
+    
+    if (origin && allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    
+    res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      res.status(200).end();
+      return;
+    }
+    
+    next();
+  });
+  
   app.use(express.json({ limit: '10mb' }));
 
   // Agent will be initialized in the background after the server starts
