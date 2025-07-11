@@ -19,6 +19,7 @@ import dotenv from 'dotenv';
 import QRCode from 'qrcode';
 import { DynamicTool } from "@langchain/core/tools";
 import { ethers } from 'ethers';
+import { generateCryptoQRData } from './utils/qrCodeGenerator.js';
 
 // Load environment variables from .env.local file
 dotenv.config({ path: '.env.local' });
@@ -232,7 +233,12 @@ async function initializeAgent(
         const { amount, fundraiserName, description } = JSON.parse(input);
         const walletAddress = await provider.getAddress();
         
-        // Construct the URL to the API endpoint
+        // Use the new QR code generator to create absolute URLs
+        const baseUrl = process.env.NODE_ENV === 'development' 
+          ? 'http://localhost:10000' 
+          : 'https://zeon-hybrid.onrender.com';
+        
+        // Construct the absolute URL to the API endpoint
         const params = new URLSearchParams({
           walletAddress,
           amount,
@@ -240,10 +246,10 @@ async function initializeAgent(
         });
         if (description) params.append('description', description);
         
-        // This is a relative URL, so the final URL will depend on the server's address
-        const qrApiUrl = `/api/qr-code?${params.toString()}`;
+        // This is now an absolute URL that will work when scanned
+        const qrApiUrl = `${baseUrl}/api/qr-code?${params.toString()}`;
         
-        // Return a markdown image tag pointing to the API endpoint
+        // Return a markdown image tag pointing to the absolute API endpoint
         return `![QR Code for ${amount} ETH to ${fundraiserName}](${qrApiUrl})`;
 
       } catch (error) {
@@ -767,8 +773,8 @@ async function main() {
     try {
       console.log(`🎯 Generating QR code image for ${amount} ETH contribution to "${fundraiserName}"`);
       
-      const amountInWei = ethers.parseEther(amount as string).toString();
-      const paymentData = `ethereum:${walletAddress}?value=${amountInWei}`;
+      // Use the new crypto QR data generator for better wallet compatibility
+      const paymentData = generateCryptoQRData(walletAddress as string, amount as string);
       
       // Generate QR code as a buffer
       const qrPngBuffer = await QRCode.toBuffer(paymentData, {
@@ -782,6 +788,7 @@ async function main() {
       
       // Send the buffer as a PNG image
       res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
       res.send(qrPngBuffer);
 
     } catch (error) {

@@ -1,5 +1,7 @@
 import QRCode from 'qrcode';
 import { ethers } from "ethers";
+import { generateFundraiserURL, safeURLEncode } from './urlHelpers.js';
+import { generateCryptoQRData } from './qrCodeGenerator.js';
 
 // Helper function to generate Base Sepolia scan links
 export const generateBaseScanLink = (
@@ -71,8 +73,8 @@ export const generateContributionQR = async (
   fundraiserName: string
 ): Promise<{ message: string; qrCode: string }> => {
   try {
-    const amountInWei = ethers.parseEther(amount).toString();
-    const paymentData = `ethereum:${walletAddress}?value=${amountInWei}`;
+    // Use the new crypto QR data generator for better wallet compatibility
+    const paymentData = generateCryptoQRData(walletAddress, amount);
     const description = `Contribution QR for ${fundraiserName}`;
     
     const qrCodeBase64 = await generateQRCode(paymentData, description);
@@ -241,7 +243,7 @@ Your fundraiser has been successfully deployed on Base Sepolia!
   }
 };
 
-// NEW: Generate fundraiser sharing link
+// NEW: Generate fundraiser sharing link using URL helpers
 export const generateFundraiserLink = (
   walletAddress: string,
   goalAmount: string,
@@ -249,24 +251,20 @@ export const generateFundraiserLink = (
   description?: string,
   currentAmount?: string
 ): string => {
-  const baseUrl = process.env.NODE_ENV === 'development' 
-    ? 'http://localhost:3000' 
-    : 'https://zeonai.xyz';
-  
-  const params = new URLSearchParams({
+  const params: any = {
     goal: goalAmount,
-    name: encodeURIComponent(fundraiserName),
-  });
+    name: fundraiserName, // URL helper will handle encoding
+  };
   
   if (description) {
-    params.append('description', encodeURIComponent(description));
+    params.description = description;
   }
   
   if (currentAmount && currentAmount !== '0') {
-    params.append('current', currentAmount);
+    params.current = currentAmount;
   }
   
-  return `${baseUrl}/fundraiser/${walletAddress}?${params.toString()}`;
+  return generateFundraiserURL(walletAddress, params);
 };
 
 // NEW: Enhanced fundraiser response formatter with sharing links

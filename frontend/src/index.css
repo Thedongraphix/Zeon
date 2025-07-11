@@ -1096,6 +1096,41 @@ img[src*="data:image/png;base64"] {
   display: block !important;
 }
 
+/* Contract Address Styling - Remove AgentKit default styling */
+.contract-address-plain {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.contract-address-text {
+  color: #333;
+  word-break: break-all;
+  user-select: all;
+  /* Allow selecting but no copy button */
+}
+
+.contract-address-link {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.contract-address-link:hover {
+  text-decoration: underline;
+}
+
+.contract-address-error {
+  color: #ff4444;
+  font-style: italic;
+}
+
+/* Hide any copy buttons that AgentKit might inject */
+.contract-address-plain button,
+.contract-address-plain .copy-button,
+.contract-address-plain [class*="copy"] {
+  display: none !important;
+}
+
 /* Enhanced Mobile Support & Touch Interactions */
 @media (max-width: 768px) {
 
