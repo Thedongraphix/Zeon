@@ -267,7 +267,7 @@ export const generateFundraiserLink = (
   return generateFundraiserURL(walletAddress, params);
 };
 
-// NEW: Enhanced fundraiser response formatter with sharing links - NO COPY FUNCTIONALITY
+// NEW: Enhanced fundraiser response formatter - NO MARKDOWN LINKS
 export const formatFundraiserResponse = (
   walletAddress: string,
   fundraiserName: string,
@@ -282,25 +282,28 @@ export const formatFundraiserResponse = (
   const goalNum = parseFloat(goalAmount);
   const currentNum = parseFloat(currentAmount || '0');
   const progressPercentage = goalNum > 0 ? Math.round((currentNum / goalNum) * 100) : 0;
-
-  // Format wallet address without copy functionality
   const shortAddress = `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
 
-  // Build the response as a single block to prevent line breaks in links
-  return `### ${fundraiserName}
-${description || 'A new fundraiser is live!'}
+  // Construct the response string with raw URLs to prevent the model from breaking markdown links.
+  // The frontend will be responsible for converting these to clickable links.
+  const responseLines = [
+    `### ${fundraiserName}`,
+    `${description || 'A new fundraiser is live!'}`,
+    '',
+    `**Progress**: ${currentAmount || '0'} / ${goalAmount} ETH (${progressPercentage}%)`,
+    `**Contributors**: ${contributors?.length || 0}`,
+    '',
+    `**Wallet Address**: ${shortAddress}`,
+    `**Network**: Base Sepolia`,
+    '',
+    '**Links**:',
+    `View on Base Sepolia Explorer: ${contractUrl}`,
+    `Share and Contribute to this Fundraiser: ${sharingLink}`,
+    '',
+    'Ready to accept contributions on Base Sepolia network!'
+  ];
 
-**Progress**: ${currentAmount || '0'} / ${goalAmount} ETH (${progressPercentage}%)
-**Contributors**: ${contributors?.length || 0}
-
-**Wallet Address**: ${shortAddress}
-**Network**: Base Sepolia
-
-**Links**:
-• [View on Base Sepolia Explorer](${contractUrl})
-• [Share and Contribute to this Fundraiser](${sharingLink})
-
-Ready to accept contributions on Base Sepolia network!`;
+  return responseLines.join('\n');
 };
 
 // Helper function to generate progress bar

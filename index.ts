@@ -209,16 +209,27 @@ async function initializeAgent(
     description: `Creates a new fundraiser for a specified ETH amount. Call this when a user wants to start a fundraiser. Returns a formatted string with fundraiser details, progress, and contribution options.`,
     func: async (input: string) => {
       try {
-        // The agent will pass a JSON string as input
         const { fundraiserName, goalAmount, description } = JSON.parse(input);
         const walletAddress = await provider.getAddress();
+        
         const fundraiserStatus = await getFundraiserStatus(
           walletAddress,
           fundraiserName,
           goalAmount,
           description
         );
-        return fundraiserStatus.formattedResponse;
+        
+        const { generateContributionQR } = await import('./utils/blockchain.js');
+        const qrData = await generateContributionQR(walletAddress, goalAmount, fundraiserName);
+
+        const responsePayload = {
+            response: fundraiserStatus.formattedResponse,
+            qrCode: qrData.qrCode,
+            qrMessage: qrData.message,
+        };
+
+        return JSON.stringify(responsePayload);
+
       } catch (error) {
         return "Error creating fundraiser. Please ensure you provide fundraiserName, goalAmount, and an optional description in JSON format.";
       }
@@ -233,13 +244,16 @@ async function initializeAgent(
         const { amount, fundraiserName, description } = JSON.parse(input);
         const walletAddress = await provider.getAddress();
         
-        // Generate actual QR code data instead of just URLs
         const { generateContributionQR } = await import('./utils/blockchain.js');
         const qrData = await generateContributionQR(walletAddress, amount, fundraiserName);
         
-        // Return the QR data as JSON string so frontend can parse it
-        return JSON.stringify(qrData);
+        const responsePayload = {
+            response: `Here is the QR code you requested for the "${fundraiserName}" fundraiser.`,
+            qrCode: qrData.qrCode,
+            qrMessage: qrData.message,
+        };
 
+        return JSON.stringify(responsePayload);
       } catch (error) {
         return "Error generating QR code. Please ensure you provide amount, fundraiserName, and an optional description in JSON format.";
       }
@@ -260,19 +274,12 @@ async function initializeAgent(
   // Create system prompt
   const systemPrompt = `You are Zeon, an AI agent specialized in helping users with cryptocurrency fundraising and wallet management.
 
-Your capabilities include:
-- Creating and managing cryptocurrency wallets
-- Helping with token and NFT transfers and transactions
-- Generating QR codes for easy payments
-- Providing guidance on fundraising strategies
-- Explaining blockchain and cryptocurrency concepts
-
 *CRITICAL FORMATTING RULES:*
-- NEVER break URLs across multiple lines
-- NEVER add spaces or line breaks inside markdown links
-- Links must be formatted as [text](url) on a single unbroken line
-- Do NOT add any text formatting that could break link parsing
-- Output tool responses exactly as provided without modification
+- You MUST return the tool's output EXACTLY as it is provided.
+- Do NOT modify, rephrase, or add any text to the tool's output.
+- Do NOT add any markdown formatting like bolding, italics, or lists unless it is already present in the tool's output.
+- URLs must NEVER be broken across multiple lines.
+- If a tool returns a JSON string, you MUST return the entire, unmodified JSON string and nothing else.
 
 *IMPORTANT FUNDRAISING GUIDELINES:*
 - To create a fundraiser, use the 'create_fundraiser' tool. You must provide 'fundraiserName' and 'goalAmount'.
@@ -288,20 +295,14 @@ Your capabilities include:
 
 Key features:
 - You operate on the ${NETWORK_ID} network.
-- You can create secure wallets for users.
 - You use tools to generate enhanced QR codes and fundraiser details.
-- You can provide comprehensive fundraiser sharing options.
-- You track contributions and display progress.
 - You maintain conversation memory across sessions.
 
 Important guidelines:
 - Always use the 'create_fundraiser' and 'generate_contribution_qr_code' tools.
 - Prioritize security and user education.
 - Explain technical concepts in simple terms.
-- Provide clear step-by-step guidance.
-- Ask clarifying questions when needed.
 - Be helpful, friendly, and professional.
-- For fundraising, focus on wallet-to-wallet contributions rather than token deployment.
 
 Current user: ${userId}
 Wallet Address: ${walletAddress}

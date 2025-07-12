@@ -60,7 +60,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
     addMessage(userMessage, user.wallet.address);
     setIsTyping(true);
 
-    // Use relative URL for proxy in development, full URL for production
     const apiUrl = process.env.NODE_ENV === 'development' ? '' : 'https://zeon-hybrid.onrender.com';
 
     try {
@@ -110,7 +109,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
     { label: 'Check Balance', command: 'What is my wallet balance?' },
     { label: 'Recent Transactions', command: 'Show my recent transactions' },
     { label: 'Gas Prices', command: 'What are current gas prices?' },
-    { label: 'Test QR Code', command: 'Generate a test QR code for debugging' }
+    { label: 'Create Fundraiser', command: 'Create a fundraiser for 0.5 ETH called "My Test Fundraiser"' }
   ];
 
   const formatTime = (date: Date) => {
@@ -125,356 +124,146 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
     return senderAddress === user?.wallet?.address;
   };
 
-  // Removed copy functionality to fix link clickability issues
-
-  // Helper function to extract transaction hashes from content
-  const extractTransactionHash = (content: string) => {
-    // Look for transaction hashes (0x followed by 64 hex characters)
-    const txHashRegex = /(0x[a-fA-F0-9]{64})/g;
-    const matches = content.match(txHashRegex);
-    return matches ? matches : [];
-  };
-
-  // Helper function to extract wallet address from content
   const extractWalletAddress = (content: string) => {
-    // Look for Ethereum addresses (0x followed by 40 hex characters)
     const ethAddressRegex = /(0x[a-fA-F0-9]{40})/g;
     const matches = content.match(ethAddressRegex);
     return matches ? matches[0] : null;
   };
 
-  // Helper function to generate Base Sepolia scan URLs
-  const getBaseScanUrl = (hashOrAddress: string, type: 'tx' | 'address' | 'token' = 'tx') => {
-    const baseUrl = 'https://sepolia.basescan.org';
-    switch (type) {
-      case 'tx':
-        return `${baseUrl}/tx/${hashOrAddress}`;
-      case 'address':
-        return `${baseUrl}/address/${hashOrAddress}`;
-      case 'token':
-        return `${baseUrl}/token/${hashOrAddress}`;
-      default:
-        return `${baseUrl}/search?q=${hashOrAddress}`;
-    }
-  };
-
-  // Helper function to generate Coinbase Wallet deep link
   const generateCoinbaseWalletLink = (toAddress: string, amount: string) => {
     try {
-      // Base Sepolia Chain ID
       const chainId = 84532;
-      
-      // Convert ETH amount to wei (multiply by 10^18)
       const amountInWei = (parseFloat(amount) * Math.pow(10, 18)).toString();
-      
-      // Create ethereum URI format
       const ethereumUri = `ethereum:${toAddress}@${chainId}?value=${amountInWei}`;
-      
-      // Encode the ethereum URI for Coinbase Wallet deep link
       const encodedUri = encodeURIComponent(ethereumUri);
-      
-      // Coinbase Wallet deep link format
-      const coinbaseWalletLink = `https://go.cb-w.com/dapp?cb_url=${encodedUri}`;
-      
-      return coinbaseWalletLink;
+      return `https://go.cb-w.com/dapp?cb_url=${encodedUri}`;
     } catch (error) {
       console.error('Error generating Coinbase Wallet link:', error);
       return null;
     }
   };
 
-  // Helper function to extract contribution amount from message
   const extractContributionAmount = (message: string) => {
-    // Look for patterns like "0.01 ETH", "0.1 ETH", etc.
     const amountRegex = /(\d+\.?\d*)\s*ETH/i;
     const match = message.match(amountRegex);
     return match ? match[1] : null;
   };
 
-  // NEW: Function to extract QR data from API response (following the guide exactly)
-  const extractQRFromResponse = (responseText: string) => {
-    try {
-      console.log('🔍 Extracting QR from response:', responseText.substring(0, 100) + '...');
-      
-      // First try: Parse the entire response as JSON (for standalone QR requests)
-      try {
-        const qrData = JSON.parse(responseText);
-        console.log('✅ Successfully parsed entire response as JSON:', qrData);
-        
-        if (qrData.qrCode && qrData.message) {
-          return {
-            message: qrData.message,
-            qrCode: qrData.qrCode
-          };
-        }
-      } catch (fullParseError) {
-        console.log('📝 Response is not pure JSON, looking for embedded QR data...');
-      }
-      
-      // Second try: Look for JSON pattern within the response text (for deployment responses)
-      const jsonMatch = responseText.match(/\{[^{}]*"qrCode"[^{}]*"message"[^{}]*\}|\{[^{}]*"message"[^{}]*"qrCode"[^{}]*\}/);
-      
-      if (jsonMatch) {
-        console.log('🎯 Found embedded JSON pattern:', jsonMatch[0].substring(0, 100) + '...');
-        const qrData = JSON.parse(jsonMatch[0]);
-        console.log('✅ Successfully parsed embedded QR payload:', qrData);
-        
-        if (qrData.qrCode && qrData.message) {
-          return {
-            message: qrData.message,
-            qrCode: qrData.qrCode
-          };
-        }
-      }
-      
-      console.log('❌ No QR data found in response');
-      return null;
-    } catch (error) {
-      console.error('❌ Failed to extract QR data:', error);
-      return null;
-    }
-  };
+  const renderTextWithLinks = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
 
-  // NEW: Helper function to parse text with asterisks for bolding
-  const renderFormattedText = (text: string) => {
-    const parts = text.split(/(\*.*?\*)/g);
     return parts.map((part, i) => {
-      if (part.startsWith('*') && part.endsWith('*')) {
-        return <strong key={i}>{part.slice(1, -1)}</strong>;
+      if (part && part.match(urlRegex)) {
+        return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">{part}</a>;
       }
-      return part;
+      
+      const boldParts = part ? part.split(/(\*.*?\*)/g) : [];
+      return boldParts.map((boldPart, j) => {
+        if (boldPart && boldPart.startsWith('*') && boldPart.endsWith('*')) {
+          return <strong key={`${i}-${j}`}>{boldPart.slice(1, -1)}</strong>;
+        }
+        return boldPart;
+      });
     });
   };
 
-  // Enhanced function to render message content with proper QR code and link handling
+  const extractPayloadFromResponse = (responseText: string) => {
+    try {
+      const data = JSON.parse(responseText);
+      if (data.response && data.qrCode && data.qrMessage) {
+        return {
+          response: data.response,
+          qrCode: data.qrCode,
+          qrMessage: data.qrMessage,
+        };
+      }
+    } catch (e) {}
+
+    try {
+      const data = JSON.parse(responseText);
+      if (data.qrCode && data.message) {
+        return {
+          response: data.message,
+          qrCode: data.qrCode,
+          qrMessage: data.message,
+        };
+      }
+    } catch (e) {}
+
+    return null;
+  }
+
   const renderMessageContent = (content: string) => {
-    // First, try to extract QR data using the guide's method
-    const qrData = extractQRFromResponse(content);
+    const payload = extractPayloadFromResponse(content);
     
-    if (qrData) {
-      console.log('🎯 Found QR data using guide method');
-      console.log('QR Code data length:', qrData.qrCode.length);
-      console.log('QR Code starts with:', qrData.qrCode.substring(0, 50));
-      
-      // Extract additional data
-      const txHashes = extractTransactionHash(qrData.message);
-      const walletAddress = extractWalletAddress(qrData.message);
+    if (payload) {
+      const walletAddress = extractWalletAddress(payload.qrMessage);
+      const contributionAmount = extractContributionAmount(payload.qrMessage);
+      const coinbaseWalletLink = (walletAddress && contributionAmount) ? generateCoinbaseWalletLink(walletAddress, contributionAmount) : null;
       
       return (
         <div className="message-content">
-          {/* Message text */}
           <div className="mb-4 whitespace-pre-wrap break-words overflow-wrap-anywhere">
-            {renderTextWithLinks(qrData.message, txHashes, walletAddress)}
+            {renderTextWithLinks(payload.response)}
           </div>
           
-          {/* QR Code Display - Following the guide exactly */}
           <div className="qr-code-container my-4">
             <div className="qr-code-wrapper">
-              {/* Dedicated QR code container with exact 256x256 dimensions */}
               <div className="qr-code-display">
                 <img 
-                  id="qr-code-image"
-                  src={qrData.qrCode}
+                  src={payload.qrCode}
                   alt="Contribution QR Code"
                   className="qr-code-png"
-                  onError={(e) => {
-                    console.error('❌ QR Code failed to load');
-                    console.error('Failed source:', e.currentTarget.src.substring(0, 100) + '...');
-                  }}
-                  onLoad={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                    console.log('✅ QR Code loaded successfully - Full size 256x256');
-                    console.log('Image dimensions:', e.currentTarget.naturalWidth, 'x', e.currentTarget.naturalHeight);
-                  }}
                 />
               </div>
               
               <div className="qr-code-actions">
-                <div className="text-xs text-blue-300 mb-3 text-center">
-                  📱 Scan with your mobile wallet to contribute
+                <div className="text-xs text-blue-300 mb-3 text-center whitespace-pre-wrap break-words">
+                  {payload.qrMessage}
                 </div>
                 
-                {/* Coinbase Wallet Quick Contribute Link */}
-                {walletAddress && (() => {
-                  const contributionAmount = extractContributionAmount(qrData.message);
-                  const coinbaseWalletLink = contributionAmount ? generateCoinbaseWalletLink(walletAddress, contributionAmount) : null;
-                  
-                  return coinbaseWalletLink ? (
-                    <div className="coinbase-wallet-link-container mb-4">
-                      <a
-                        href={coinbaseWalletLink}
-                        className="coinbase-wallet-link"
-                        title={`Contribute ${contributionAmount} ETH via Coinbase Wallet`}
-                      >
-                        <div className="coinbase-wallet-icon">
-                          <img 
-                            src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iMTYiIGZpbGw9IiMwMDUyRkYiLz4KPHBhdGggZD0iTTEzIDEzSDIwVjE5SDEzVjEzWiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+"
-                            alt="Coinbase"
-                            className="w-5 h-5"
-                          />
-                        </div>
-                        <span className="coinbase-wallet-text">
-                          Contribute {contributionAmount} ETH via Coinbase Wallet
-                        </span>
-                        <span className="external-link-icon">↗</span>
-                      </a>
-                      <div className="text-xs text-blue-400 mt-1 text-center">
-                        Opens Coinbase Wallet with pre-filled transaction
+                {coinbaseWalletLink && (
+                  <div className="coinbase-wallet-link-container mb-4">
+                    <a
+                      href={coinbaseWalletLink}
+                      className="coinbase-wallet-link"
+                      title={`Contribute ${contributionAmount} ETH via Coinbase Wallet`}
+                    >
+                      <div className="coinbase-wallet-icon">
+                        <img 
+                          src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iMTYiIGZpbGw9IiMwMDUyRkYiLz4KPHBhdGggZD0iTTEzIDEzSDIwVjE5SDEzVjEzWiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+"
+                          alt="Coinbase"
+                          className="w-5 h-5"
+                        />
                       </div>
-                    </div>
-                  ) : null;
-                })()}
+                      <span className="coinbase-wallet-text">
+                        Contribute {contributionAmount} ETH via Coinbase Wallet
+                      </span>
+                      <span className="external-link-icon">↗</span>
+                    </a>
+                  </div>
+                )}
                 
-                {/* Wallet Address Section - No Copy Functionality */}
                 {walletAddress && (
                   <div className="wallet-address-section">
                     <div className="wallet-address-display">
-                      <span className="address-text">{walletAddress}</span>
-                    </div>
-                    <div className="text-xs text-blue-400 mt-1 text-center">
-                      Wallet Address for Contributions
+                      <span className="address-text select-all">{walletAddress}</span>
                     </div>
                   </div>
                 )}
               </div>
             </div>
           </div>
-          
-          {/* Additional Transaction Links - No Copy Functionality */}
-          {txHashes.length > 0 && (
-            <div className="mt-3">
-              {txHashes.map((txHash, index) => (
-                <div key={`tx-${index}`} className="transaction-link-container mb-2">
-                  <a
-                    href={getBaseScanUrl(txHash, 'tx')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="transaction-link"
-                  >
-                    <span className="transaction-icon">🔍</span>
-                    <span className="transaction-text">
-                      View on Base Scan: {`${txHash.slice(0, 10)}...${txHash.slice(-8)}`}
-                    </span>
-                    <span className="external-link-icon">↗</span>
-                  </a>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       );
     }
     
-    // Fallback: Handle as regular text with potential transaction hashes or wallet addresses
-    const txHashes = extractTransactionHash(content);
-    const walletAddress = extractWalletAddress(content);
-    
-    // Handle regular text with potential transaction hashes or wallet addresses
-    return renderTextWithLinks(content, txHashes, walletAddress);
-  };
-
-  // Helper function to render transaction links - No Copy Functionality
-  const renderTransactionLinks = (txHashes: string[]) => {
     return (
-      <div className="mt-3">
-        {txHashes.map((txHash, index) => (
-          <div key={`tx-link-${index}`} className="transaction-link-container mb-2">
-            <a
-              href={getBaseScanUrl(txHash, 'tx')}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="transaction-link"
-              >
-                <span className="transaction-icon">🔍</span>
-              <span className="transaction-text">
-                View on Base Scan: {`${txHash.slice(0, 10)}...${txHash.slice(-8)}`}
-              </span>
-                <span className="external-link-icon">↗</span>
-              </a>
-            </div>
-        ))}
-      </div>
-    );
-  };
-
-  // Helper function to render text content with clickable links
-  const renderTextWithLinks = (content: string, txHashes: string[], walletAddress: string | null) => {
-    let processedContent = content;
-    
-    // Replace transaction hashes with placeholders
-    txHashes.forEach((txHash, index) => {
-      processedContent = processedContent.replace(
-        new RegExp(txHash.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
-        `__TX_PLACEHOLDER_${index}__`
-          );
-        });
-    
-    // Replace wallet address with placeholder
-    if (walletAddress) {
-      processedContent = processedContent.replace(
-        new RegExp(walletAddress.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
-        '__WALLET_PLACEHOLDER__'
-      );
-    }
-    
-    // Split content and process placeholders
-    const parts = processedContent.split(/(__TX_PLACEHOLDER_\d+__|__WALLET_PLACEHOLDER__)/);
-    
-      return (
-        <div className="message-content">
+      <div className="message-content">
         <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere">
-          {parts.map((part, index) => {
-            // Handle transaction hash placeholders
-            const txMatch = part.match(/^__TX_PLACEHOLDER_(\d+)__$/);
-            if (txMatch) {
-              const txIndex = parseInt(txMatch[1]);
-              const txHash = txHashes[txIndex];
-              return (
-                <span key={`tx-inline-${index}`} className="inline-block">
-                  <a
-                    href={getBaseScanUrl(txHash, 'tx')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:text-blue-300 underline"
-                    title={`View transaction ${txHash} on Base Scan`}
-                  >
-                    {`${txHash.slice(0, 10)}...${txHash.slice(-8)}`}
-                  </a>
-                </span>
-              );
-            }
-            
-            // Handle wallet address placeholder - No Copy Functionality
-            if (part === '__WALLET_PLACEHOLDER__' && walletAddress) {
-              return (
-                <span key={`wallet-inline-${index}`} className="inline-wallet-address">
-                  <span className="address-text">{walletAddress}</span>
-                </span>
-              );
-            }
-            
-            // Regular text - now with bold formatting
-            return <span key={index}>{renderFormattedText(part)}</span>;
-          })}
+          {renderTextWithLinks(content)}
         </div>
-        
-        {/* Transaction links section */}
-        {txHashes.length > 0 && (
-          <div className="mt-3">
-            {renderTransactionLinks(txHashes)}
-          </div>
-        )}
-        
-        {/* Standalone wallet address section - No Copy Functionality */}
-        {walletAddress && !processedContent.includes('__WALLET_PLACEHOLDER__') && (
-          <div className="wallet-address-section mt-3">
-            <div className="wallet-address-display">
-              <span className="address-text">{walletAddress}</span>
-            </div>
-            <div className="text-xs text-blue-400 mt-1 text-center">
-              Wallet Address for Contributions
-            </div>
-          </div>
-        )}
       </div>
     );
   };
