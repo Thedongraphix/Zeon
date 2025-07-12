@@ -1,55 +1,65 @@
-import { generatePrivateKey } from "viem/accounts";
-import { getRandomValues } from "node:crypto";
-import fs from "node:fs";
+import { generateEncryptionKeyHex, generatePrivateKeyHex } from "../helpers/client.js";
+import fs from "fs";
+import path from "path";
 
 /**
- * Generate a random encryption key
- * @returns The encryption key as a hex string
+ * Generate XMTP agent keys
+ * This script generates the necessary keys for an XMTP agent
  */
-function generateEncryptionKeyHex(): string {
-  const uint8Array = getRandomValues(new Uint8Array(32));
-  const hex = Array.from(uint8Array)
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-  return hex;
-}
+async function generateKeys() {
+  console.log("🔑 Generating XMTP agent keys...");
 
-/**
- * Generate CDP API configuration and append to .env file
- */
-function generateKeys(): void {
-  const walletKey = generatePrivateKey();
+  // Generate wallet private key
+  const walletKey = generatePrivateKeyHex();
+  
+  // Generate encryption key for XMTP database
   const encryptionKey = generateEncryptionKeyHex();
-  
-  console.log("🔑 Generated Keys for CDP AgentKit:");
-  console.log(`📝 Wallet Key: ${walletKey}`);
-  console.log(`🔐 Encryption Key: ${encryptionKey}`);
-  
-  // Append to .env file
-  const envContent = `
-# Generated CDP AgentKit Configuration
+
+  // Create .env content
+  const envContent = `# XMTP Environment Variables
 WALLET_KEY=${walletKey}
 ENCRYPTION_KEY=${encryptionKey}
+XMTP_ENV=dev
+
+# Coinbase AgentKit Configuration
+CDP_API_KEY_NAME=organizations/.../apiKeys/...
+CDP_API_KEY_PRIVATE_KEY=-----BEGIN EC...END EC PRIVATE KEY-----\\n
+
+# OpenAI Configuration
+OPENAI_API_KEY=sk-...
+
+# Network Configuration
 NETWORK_ID=base-sepolia
 `;
 
+  // Write to .env file
+  const envPath = path.resolve(process.cwd(), ".env");
+  
   try {
-    fs.appendFileSync(".env", envContent);
-    console.log("✅ Keys appended to .env file");
-    console.log("⚠️  Please add your API credentials:");
-    console.log("   CDP_API_KEY_NAME=your_cdp_api_key_name");
-    console.log("   CDP_API_KEY_PRIVATE_KEY=your_cdp_private_key");
-    console.log("   OPENROUTER_API_KEY=your_openrouter_api_key");
+    if (fs.existsSync(envPath)) {
+      console.log("⚠️  .env file already exists, backing up...");
+      fs.copyFileSync(envPath, `${envPath}.backup.${Date.now()}`);
+    }
+    
+    fs.writeFileSync(envPath, envContent);
+    
+    console.log("✅ Keys generated successfully!");
+    console.log(`📝 Created .env file with:`);
+    console.log(`   • WALLET_KEY: ${walletKey}`);
+    console.log(`   • ENCRYPTION_KEY: ${encryptionKey.substring(0, 10)}...`);
+    console.log(`   • XMTP_ENV: dev`);
+    console.log("");
+    console.log("🔧 Next steps:");
+    console.log("1. Add your CDP API key name and private key to .env");
+    console.log("2. Add your OpenAI API key to .env");
+    console.log("3. Run 'npm run dev' to start your agent");
+    
   } catch (error) {
-    console.error("❌ Failed to write to .env file:", error);
-    console.log("📋 Please manually add these to your .env file:");
+    console.error("❌ Error writing .env file:", error);
+    console.log("📝 Please create a .env file manually with the following content:");
     console.log(envContent);
   }
 }
 
-// Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  generateKeys();
-}
-
-export { generateKeys, generateEncryptionKeyHex }; 
+// Run the key generation
+generateKeys().catch(console.error); 

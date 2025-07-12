@@ -1,13 +1,16 @@
 {
-  "name": "zeon-hybrid-api",
-  "version": "1.0.0",
-  "description": "Zeon AI Agent with Coinbase AgentKit for fundraising and wallet management",
+  "name": "@examples/xmtp-coinbase-agentkit",
+  "version": "0.0.1",
+  "private": true,
+  "description": "XMTP Agent with Coinbase AgentKit for fundraising and wallet management",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "node -r dotenv/config dist/index.js dotenv_config_path=.env.local",
+    "start": "tsx index.ts",
     "dev": "tsx --watch index.ts",
+    "gen:keys": "tsx scripts/generateKeys.ts",
+    "lint": "cd ../.. && yarn eslint examples/xmtp-coinbase-agentkit",
     "test": "jest"
   },
   "dependencies": {
@@ -16,12 +19,13 @@
     "@langchain/core": "^0.3.19",
     "@langchain/langgraph": "^0.2.21",
     "@langchain/openai": "^0.3.14",
+    "@xmtp/node-sdk": "^3.1.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "qrcode": "^1.5.3",
     "solc": "^0.8.30",
-    "tsx": "^4.20.3",
+    "uint8arrays": "^5.1.0",
     "viem": "^2.31.2"
   },
   "devDependencies": {
@@ -31,7 +35,8 @@
     "@types/node": "^24.0.1",
     "@types/qrcode": "^1.5.5",
     "hardhat": "^2.25.0",
-    "typescript": "^5.4.5"
+    "tsx": "*",
+    "typescript": "*"
   },
   "engines": {
     "node": ">=20"

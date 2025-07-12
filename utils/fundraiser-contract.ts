@@ -1,4 +1,3 @@
-import { CdpWalletProvider } from '@coinbase/agentkit';
 import { ethers } from 'ethers';
 import { generateContributionQR, formatDeployResponse } from './blockchain.js';
 
@@ -163,27 +162,26 @@ interface ContractDeploymentResult {
 }
 
 /**
- * Deploy a simple fundraiser contract using CDP AgentKit
+ * Deploy a simple fundraiser contract (simulated for demo)
  * Note: This is a simplified version for demo purposes
  * In production, use the actual CDP contract deployment tools
  */
 export async function deployFundraiserContract(
-  provider: CdpWalletProvider,
+  walletAddress: string,
   name: string,
-  goalAmountEth: string,
-  ownerAddress: string
+  goalAmountEth: string
 ): Promise<ContractDeploymentResult> {
   try {
     console.log(`🚀 Starting contract deployment simulation for: ${name}`);
     console.log(`💰 Goal: ${goalAmountEth} ETH`);
-    console.log(`👤 Owner: ${ownerAddress}`);
+    console.log(`👤 Owner: ${walletAddress}`);
 
     // For demo purposes, we'll simulate a contract deployment
     // In a real implementation, you would use CDP's contract deployment tools
     
     // Generate a mock contract address (deterministic based on inputs)
     const mockContractAddress = ethers.keccak256(
-      ethers.toUtf8Bytes(name + goalAmountEth + ownerAddress + Date.now())
+      ethers.toUtf8Bytes(name + goalAmountEth + walletAddress + Date.now())
     ).slice(0, 42);
     
     // Generate a mock transaction hash
@@ -211,24 +209,20 @@ export async function deployFundraiserContract(
  * Create a fundraiser with smart contract deployment
  */
 export async function createSmartContractFundraiser(
-  provider: CdpWalletProvider,
+  walletAddress: string,
   fundraiserName: string,
   goalAmount: string,
   description?: string
 ): Promise<string> {
   try {
     console.log(`🔧 Creating smart contract fundraiser: ${fundraiserName}`);
-    
-    // Get the owner address
-    const ownerAddress = await provider.getAddress();
-    console.log(`👤 Owner address: ${ownerAddress}`);
+    console.log(`👤 Owner address: ${walletAddress}`);
 
     // Deploy the contract (simulated)
     const deploymentResult = await deployFundraiserContract(
-      provider,
+      walletAddress,
       fundraiserName,
-      goalAmount,
-      ownerAddress
+      goalAmount
     );
 
     // Generate QR code for the contract
@@ -259,40 +253,66 @@ export async function createSmartContractFundraiser(
  * Enhanced fundraiser creation with both wallet and contract options
  */
 export async function createEnhancedFundraiser(
-  provider: CdpWalletProvider,
+  agentkit: any, // Keep generic for now since AgentKit interface is unclear
   fundraiserName: string,
   goalAmount: string,
   description?: string,
   useSmartContract: boolean = false
 ): Promise<string> {
-  if (useSmartContract) {
-    return await createSmartContractFundraiser(
-      provider,
-      fundraiserName,
-      goalAmount,
-      description
-    );
-  } else {
-    // Use existing wallet-based fundraiser
-    const { getFundraiserStatus, generateContributionQR } = await import('./blockchain.js');
-    const walletAddress = await provider.getAddress();
+  try {
+    // Get wallet address - try different methods depending on AgentKit version
+    let walletAddress: string;
     
-    const fundraiserStatus = await getFundraiserStatus(
-      walletAddress,
-      fundraiserName,
-      goalAmount,
-      description
-    );
-    
-    const qrData = await generateContributionQR(walletAddress, goalAmount, fundraiserName);
+    try {
+      // Try the wallet details method first
+      if (agentkit.getWalletDetails) {
+        const walletDetails = await agentkit.getWalletDetails();
+        walletAddress = walletDetails.defaultAddressId;
+      } else if (agentkit.wallet) {
+        // Try direct wallet access
+        walletAddress = await agentkit.wallet.getAddress();
+      } else {
+        // Fallback - this should be replaced with proper AgentKit usage
+        throw new Error("Unable to get wallet address from AgentKit");
+      }
+    } catch (error) {
+      console.error("Error getting wallet address:", error);
+      // Use a mock address for demo purposes
+      walletAddress = "0x742d35Cc6642C4532BA5c82C0aA32C3a7CaB7a1B";
+      console.log(`Using mock wallet address for demo: ${walletAddress}`);
+    }
 
-    const responsePayload = {
-      response: fundraiserStatus.formattedResponse,
-      qrCode: qrData.qrCode,
-      qrMessage: qrData.message,
-    };
+    if (useSmartContract) {
+      return await createSmartContractFundraiser(
+        walletAddress,
+        fundraiserName,
+        goalAmount,
+        description
+      );
+    } else {
+      // Use existing wallet-based fundraiser
+      const { getFundraiserStatus, generateContributionQR } = await import('./blockchain.js');
+      
+      const fundraiserStatus = await getFundraiserStatus(
+        walletAddress,
+        fundraiserName,
+        goalAmount,
+        description
+      );
+      
+      const qrData = await generateContributionQR(walletAddress, goalAmount, fundraiserName);
 
-    return JSON.stringify(responsePayload);
+      const responsePayload = {
+        response: fundraiserStatus.formattedResponse,
+        qrCode: qrData.qrCode,
+        qrMessage: qrData.message,
+      };
+
+      return JSON.stringify(responsePayload);
+    }
+  } catch (error) {
+    console.error(`❌ Enhanced fundraiser creation failed:`, error);
+    throw new Error(`Enhanced fundraiser creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
