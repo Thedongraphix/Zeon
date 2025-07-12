@@ -1,0 +1,40 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "/home/chrisdev/Zeon /contracts/SimpleFundraiser.sol": {
+      "lastModificationDate": 1752342390783,
+      "contentHash": "f9c1562ac9d9cd453e37560bbb8405c8",
+      "sourceName": "contracts/SimpleFundraiser.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.19"
+      ],
+      "artifacts": [
+        "SimpleFundraiser"
+      ]
+    }
+  }
+}

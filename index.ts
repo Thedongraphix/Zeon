@@ -34,8 +34,13 @@ import {
   formatFundraiserResponse, 
   getFundraiserStatus 
 } from "./utils/blockchain.js";
-// Import balance management
-import { BalanceManager } from "./utils/balance-manager.js";
+// Import enhanced contract deployment
+import { 
+  createEnhancedFundraiser, 
+  createSmartContractFundraiser 
+} from "./utils/fundraiser-contract.js";
+// Import balance manager
+import BalanceManager from "./utils/balance-manager.js";
 
 const {
   CDP_API_KEY_NAME,
@@ -210,28 +215,42 @@ async function initializeAgent(
     func: async (input: string) => {
       try {
         const { fundraiserName, goalAmount, description } = JSON.parse(input);
-        const walletAddress = await provider.getAddress();
         
-        const fundraiserStatus = await getFundraiserStatus(
-          walletAddress,
+        // Use enhanced fundraiser creation (wallet-based by default)
+        const result = await createEnhancedFundraiser(
+          provider,
           fundraiserName,
           goalAmount,
-          description
+          description,
+          false // Use wallet-based fundraiser
         );
         
-        const { generateContributionQR } = await import('./utils/blockchain.js');
-        const qrData = await generateContributionQR(walletAddress, goalAmount, fundraiserName);
-
-        const responsePayload = {
-            response: fundraiserStatus.formattedResponse,
-            qrCode: qrData.qrCode,
-            qrMessage: qrData.message,
-        };
-
-        return JSON.stringify(responsePayload);
-
+        return result;
       } catch (error) {
         return "Error creating fundraiser. Please ensure you provide fundraiserName, goalAmount, and an optional description in JSON format.";
+      }
+    },
+  });
+
+  const contractFundraiserTool = new DynamicTool({
+    name: "create_contract_fundraiser",
+    description: `Creates a new smart contract fundraiser for a specified ETH amount. This deploys an actual contract on Base Sepolia that can be verified and interacted with directly. Call this when a user wants to start a contract-based fundraiser. Returns a formatted string with deployment details, contract address, and QR code.`,
+    func: async (input: string) => {
+      try {
+        const { fundraiserName, goalAmount, description } = JSON.parse(input);
+        
+        // Use enhanced fundraiser creation with smart contract
+        const result = await createEnhancedFundraiser(
+          provider,
+          fundraiserName,
+          goalAmount,
+          description,
+          true // Use smart contract deployment
+        );
+        
+        return result;
+      } catch (error) {
+        return "Error creating contract fundraiser. Please ensure you provide fundraiserName, goalAmount, and an optional description in JSON format.";
       }
     },
   });
@@ -260,8 +279,8 @@ async function initializeAgent(
     },
   });
 
-  const tools = [...agentKitTools, fundraiserTool, qrCodeTool];
-  console.log(`-  Added 2 custom tools. Total tools: ${tools.length}`);
+  const tools = [...agentKitTools, fundraiserTool, contractFundraiserTool, qrCodeTool];
+  console.log(`✅ Added 3 custom tools. Total tools: ${tools.length}`);
 
   // Create memory saver
   let memory = memoryStore[userId];
@@ -282,10 +301,19 @@ async function initializeAgent(
 - If a tool returns a JSON string, you MUST return the entire, unmodified JSON string and nothing else.
 
 *IMPORTANT FUNDRAISING GUIDELINES:*
-- To create a fundraiser, use the 'create_fundraiser' tool. You must provide 'fundraiserName' and 'goalAmount'.
+- To create a wallet-based fundraiser, use the 'create_fundraiser' tool. You must provide 'fundraiserName' and 'goalAmount'.
+- To create a smart contract fundraiser, use the 'create_contract_fundraiser' tool. You must provide 'fundraiserName' and 'goalAmount'.
 - To generate a QR code, use the 'generate_contribution_qr_code' tool. You must provide 'amount' and 'fundraiserName'.
+- Smart contract fundraisers are deployed on Base Sepolia and can be verified on BaseScan.
+- Wallet-based fundraisers are simpler and use direct wallet transfers.
 - Do not make up responses for fundraisers or QR codes. Use the tools.
 - Always use the exact output from tools without reformatting.
+
+*SMART CONTRACT FEATURES:*
+- Smart contract fundraisers are deployed on Base Sepolia network.
+- They provide transparency, automatic tracking, and are verifiable on BaseScan.
+- Contributors can interact directly with the contract.
+- The contract includes safety features like withdrawal controls and goal tracking.
 
 *FUND MANAGEMENT PROTOCOL:*
 - I maintain a minimum balance of 0.002 ETH for fast operations.
@@ -297,12 +325,14 @@ Key features:
 - You operate on the ${NETWORK_ID} network.
 - You use tools to generate enhanced QR codes and fundraiser details.
 - You maintain conversation memory across sessions.
+- You can deploy actual smart contracts for fundraisers.
 
 Important guidelines:
-- Always use the 'create_fundraiser' and 'generate_contribution_qr_code' tools.
+- Always use the fundraiser creation tools and QR code generation tools.
 - Prioritize security and user education.
 - Explain technical concepts in simple terms.
 - Be helpful, friendly, and professional.
+- When users ask for contract deployment, use the 'create_contract_fundraiser' tool.
 
 Current user: ${userId}
 Wallet Address: ${walletAddress}
