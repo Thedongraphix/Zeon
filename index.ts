@@ -1,4 +1,6 @@
 import * as fs from "fs";
+import express from "express";
+import cors from "cors";
 import {
   AgentKit,
   cdpApiActionProvider,
@@ -328,6 +330,45 @@ async function startMessageListener(client: Client) {
 }
 
 /**
+ * Setup Express server for health checks and API endpoints
+ */
+function setupExpressServer() {
+  const app = express();
+  const PORT = process.env.PORT || 3000;
+
+  // Middleware
+  app.use(cors());
+  app.use(express.json());
+
+  // Health check endpoint for Render
+  app.get('/health', (req, res) => {
+    res.status(200).json({ 
+      status: 'healthy', 
+      service: 'XMTP Coinbase Agent',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  // Basic info endpoint
+  app.get('/', (req, res) => {
+    res.json({
+      name: 'XMTP Coinbase Agent',
+      description: 'DeFi Payment Agent using XMTP and Coinbase AgentKit',
+      version: '1.0.0',
+      status: 'running'
+    });
+  });
+
+  // Start server
+  app.listen(PORT, () => {
+    console.log(`🚀 Express server running on port ${PORT}`);
+    console.log(`📋 Health check available at: http://localhost:${PORT}/health`);
+  });
+
+  return app;
+}
+
+/**
  * Main function to start the chatbot.
  */
 async function main(): Promise<void> {
@@ -335,7 +376,13 @@ async function main(): Promise<void> {
 
   ensureLocalStorage();
 
+  // Setup Express server for health checks
+  setupExpressServer();
+
+  // Initialize and start XMTP client
   const xmtpClient = await initializeXmtpClient();
+  
+  // Start message listener (this will run indefinitely)
   await startMessageListener(xmtpClient);
 }
 
