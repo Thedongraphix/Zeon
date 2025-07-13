@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: zeon-hybrid-api
+    name: zeon-xmtp-agent
     env: node
     plan: free
     buildCommand: npm install && npm run build
@@ -14,6 +14,12 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20
+      - key: XMTP_ENV
+        value: dev
+      - key: WALLET_KEY
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
       - key: CDP_API_KEY_NAME
         sync: false
       - key: CDP_API_KEY_PRIVATE_KEY
