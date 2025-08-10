@@ -54,7 +54,7 @@ npm run dev
 
 ## Usage
 
-### Testing Your Agent
+### Testing Your Agent on dev and production 
 
 1. **Development Environment**:
    - Go to [xmtp.chat](https://xmtp.chat)
