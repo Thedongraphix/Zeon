@@ -11,7 +11,7 @@ An AI-powered fundraising agent built with XMTP protocol and Coinbase AgentKit. 
 - **Multi-conversation Support**: Works in both DMs and group chats
 - **AI-Powered Responses**: Natural language understanding with OpenAI
 
-## Quick Start
+## Quick Start guide
 
 ### Prerequisites
 
